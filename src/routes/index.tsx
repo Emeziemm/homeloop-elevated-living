@@ -377,9 +377,9 @@ function LogoStrip() {
 
 function FeaturedProperties() {
   const items = [
-    { image: property2, title: "The Ridge Residence", price: "$6.4M", loc: "Malibu, CA", beds: "5 bed · 6 bath · 8,200 sqft", size: "large" },
-    { image: property1, title: "Palm House", price: "$3.8M", loc: "Beverly Hills, CA", beds: "4 bed · 4 bath", size: "portrait" },
-    { image: property3, title: "The Skyline Loft", price: "$2.1M", loc: "Downtown LA", beds: "2 bed · 2 bath", size: "portrait" },
+    { image: property2, title: "The Ridge Residence", price: "$6.4M", loc: "Malibu, CA", beds: "5 bed · 6 bath · 8,200 sqft", size: "large" as const },
+    { image: property1, title: "Palm House", price: "$3.8M", loc: "Beverly Hills, CA", beds: "4 bed · 4 bath", size: "portrait" as const },
+    { image: property3, title: "The Skyline Loft", price: "$2.1M", loc: "Downtown LA", beds: "2 bed · 2 bath", size: "portrait" as const },
   ];
   return (
     <section id="properties" className="bg-canvas py-28 lg:py-40">
