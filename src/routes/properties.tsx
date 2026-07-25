@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SiteNav } from "@/components/site-nav";
 import { filterChips, formatPrice, properties, type Property } from "@/lib/properties";
 import heroVilla from "@/assets/hero-villa.jpg";
@@ -21,11 +21,33 @@ export const Route = createFileRoute("/properties")({
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
+type SearchState = {
+  location: string;
+  type: string;
+  beds: string;
+  baths: string;
+  min: number;
+  max: number;
+};
+
+const BUDGET_MIN = 0;
+const BUDGET_MAX = 15_000_000;
+const initialSearch: SearchState = {
+  location: "",
+  type: "Any",
+  beds: "Any",
+  baths: "Any",
+  min: BUDGET_MIN,
+  max: BUDGET_MAX,
+};
+
 function PropertiesPage() {
   const [filters, setFilters] = useState<string[]>([]);
   const [quickView, setQuickView] = useState<Property | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState<SearchState>(initialSearch);
+  const [searching, setSearching] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
   const toggle = (c: string) =>
@@ -41,27 +63,52 @@ function PropertiesPage() {
     }
     const cats = ["Luxury", "Apartment", "Villa", "Townhouse", "Commercial"].filter((c) => filters.includes(c));
     if (cats.length) list = list.filter((p) => cats.includes(p.category));
+    // Search
+    if (search.location.trim()) {
+      const q = search.location.trim().toLowerCase();
+      list = list.filter((p) => p.location.toLowerCase().includes(q) || p.title.toLowerCase().includes(q));
+    }
+    if (search.type !== "Any") list = list.filter((p) => p.category === search.type);
+    if (search.beds !== "Any") list = list.filter((p) => p.beds >= parseInt(search.beds));
+    if (search.baths !== "Any") list = list.filter((p) => p.baths >= parseInt(search.baths));
+    list = list.filter((p) => p.price >= search.min && p.price <= search.max);
     if (filters.includes("Price Low → High")) list.sort((a, b) => a.price - b.price);
     if (filters.includes("Newest")) list.sort((a, b) => b.yearBuilt - a.yearBuilt);
     return list;
-  }, [filters]);
+  }, [filters, search]);
+
+  useEffect(() => { setPage(1); }, [filters, search]);
 
   const perPage = 6;
   const pages = Math.max(1, Math.ceil(filtered.length / perPage));
   const visible = filtered.slice((page - 1) * perPage, page * perPage);
 
+  const onSearchSubmit = () => {
+    setSearching(true);
+    setTimeout(() => {
+      setSearching(false);
+      gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 550);
+  };
+
   return (
     <div className="min-h-screen bg-canvas text-ink">
       <SiteNav overDark />
-      <ListingsHero />
+      <ListingsHero search={search} setSearch={setSearch} onSubmit={onSearchSubmit} searching={searching} />
       <StickyFilters filters={filters} toggle={toggle} onOpenDrawer={() => setDrawerOpen(true)} />
 
       <section ref={gridRef} className="mx-auto max-w-[1400px] px-6 pb-24 pt-14 lg:px-10">
-        {filtered.length === 0 ? (
-          <EmptyState onReset={() => setFilters([])} />
-        ) : (
-          <MosaicGrid items={visible} onQuickView={setQuickView} />
-        )}
+        <AnimatePresence mode="wait">
+          {filtered.length === 0 ? (
+            <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35 }}>
+              <EmptyState onReset={() => { setFilters([]); setSearch(initialSearch); }} />
+            </motion.div>
+          ) : (
+            <motion.div key={`page-${page}-${filtered.length}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.4, ease }}>
+              <PropertyGrid items={visible} onQuickView={setQuickView} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {filtered.length > 0 && (
           <Pagination page={page} pages={pages} onPage={(p) => { setPage(p); gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
@@ -78,7 +125,7 @@ function PropertiesPage() {
 
 /* -------------------- Hero -------------------- */
 
-function ListingsHero() {
+function ListingsHero({ search, setSearch, onSubmit, searching }: { search: SearchState; setSearch: (s: SearchState | ((p: SearchState) => SearchState)) => void; onSubmit: () => void; searching: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
@@ -108,40 +155,216 @@ function ListingsHero() {
           Browse carefully curated homes designed for modern living — from coastal villas to editorial city apartments.
         </motion.p>
 
-        <SearchPanel />
+        <SearchPanel search={search} setSearch={setSearch} onSubmit={onSubmit} searching={searching} />
       </div>
     </section>
   );
 }
 
-function SearchPanel() {
-  const fields = [
-    { label: "Location", value: "Any city" },
-    { label: "Property Type", value: "Any type" },
-    { label: "Bedrooms", value: "2+" },
-    { label: "Bathrooms", value: "2+" },
-    { label: "Budget", value: "€1M — €5M" },
+function SearchPanel({ search, setSearch, onSubmit, searching }: { search: SearchState; setSearch: (s: SearchState | ((p: SearchState) => SearchState)) => void; onSubmit: () => void; searching: boolean }) {
+  const [open, setOpen] = useState<null | "location" | "type" | "beds" | "baths" | "budget">(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(null);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const budgetLabel = search.min === BUDGET_MIN && search.max === BUDGET_MAX
+    ? "Any budget"
+    : `${formatPrice(search.min)} — ${formatPrice(search.max)}`;
+
+  const fields: { key: NonNullable<typeof open>; label: string; value: string }[] = [
+    { key: "location", label: "Location", value: search.location || "Any city" },
+    { key: "type", label: "Property Type", value: search.type === "Any" ? "Any type" : search.type },
+    { key: "beds", label: "Bedrooms", value: search.beds === "Any" ? "Any" : `${search.beds}+` },
+    { key: "baths", label: "Bathrooms", value: search.baths === "Any" ? "Any" : `${search.baths}+` },
+    { key: "budget", label: "Budget", value: budgetLabel },
   ];
+
   return (
     <motion.div
+      ref={panelRef}
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 1, ease, delay: 0.7 }}
-      className="mt-12 w-full rounded-3xl border border-primary-foreground/10 bg-canvas/95 p-3 shadow-[0_40px_120px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
+      className="relative mt-12 w-full rounded-3xl border border-primary-foreground/10 bg-canvas/95 p-3 shadow-[0_40px_120px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
     >
       <div className="grid grid-cols-2 gap-1 md:grid-cols-6">
         {fields.map((f) => (
-          <button key={f.label} className="group rounded-2xl px-5 py-4 text-left transition-all duration-300 hover:bg-ink/[0.04]">
+          <button
+            key={f.key}
+            onClick={() => setOpen(open === f.key ? null : f.key)}
+            className={`group rounded-2xl px-5 py-4 text-left transition-all duration-300 hover:bg-ink/[0.04] ${open === f.key ? "bg-ink/[0.06]" : ""}`}
+          >
             <div className="text-[10px] uppercase tracking-[0.24em] text-ink/50">{f.label}</div>
             <div className="mt-1 truncate text-sm font-medium text-ink">{f.value}</div>
           </button>
         ))}
-        <button className="group col-span-2 flex items-center justify-center gap-2 rounded-2xl bg-ink px-5 py-4 text-sm font-medium text-primary-foreground transition-all duration-500 hover:bg-gold hover:text-ink md:col-span-1">
-          Search
-          <svg className="h-4 w-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+        <button
+          onClick={onSubmit}
+          disabled={searching}
+          className="group col-span-2 flex items-center justify-center gap-2 rounded-2xl bg-ink px-5 py-4 text-sm font-medium text-primary-foreground transition-all duration-500 hover:bg-gold hover:text-ink disabled:opacity-70 md:col-span-1"
+        >
+          {searching ? (
+            <>
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              Searching
+            </>
+          ) : (
+            <>
+              Search
+              <svg className="h-4 w-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+            </>
+          )}
         </button>
       </div>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2, ease }}
+            className="absolute left-3 right-3 top-[calc(100%+8px)] z-30 rounded-2xl border border-ink/10 bg-canvas p-4 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.35)]"
+          >
+            {open === "location" && (
+              <LocationPopover
+                value={search.location}
+                onChange={(v) => setSearch((p) => ({ ...p, location: v }))}
+                onClose={() => setOpen(null)}
+              />
+            )}
+            {open === "type" && (
+              <OptionsList
+                options={["Any", "Luxury", "Villa", "Apartment", "Townhouse", "Commercial"]}
+                value={search.type}
+                onSelect={(v) => { setSearch((p) => ({ ...p, type: v })); setOpen(null); }}
+              />
+            )}
+            {open === "beds" && (
+              <OptionsList
+                options={["Any", "1", "2", "3", "4", "5"]}
+                value={search.beds}
+                onSelect={(v) => { setSearch((p) => ({ ...p, beds: v })); setOpen(null); }}
+                suffix="+"
+              />
+            )}
+            {open === "baths" && (
+              <OptionsList
+                options={["Any", "1", "2", "3", "4", "5"]}
+                value={search.baths}
+                onSelect={(v) => { setSearch((p) => ({ ...p, baths: v })); setOpen(null); }}
+                suffix="+"
+              />
+            )}
+            {open === "budget" && (
+              <BudgetRange
+                min={search.min}
+                max={search.max}
+                onChange={(min, max) => setSearch((p) => ({ ...p, min, max }))}
+              />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
+  );
+}
+
+function LocationPopover({ value, onChange, onClose }: { value: string; onChange: (v: string) => void; onClose: () => void }) {
+  const cities = useMemo(() => Array.from(new Set(properties.map((p) => p.location))), []);
+  const recents = ["Cap Ferrat, France", "Milano Brera, Italy", "Lisbon, Portugal"];
+  const q = value.trim().toLowerCase();
+  const matches = q ? cities.filter((c) => c.toLowerCase().includes(q)) : cities;
+  return (
+    <div>
+      <input
+        autoFocus
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Search city, region…"
+        className="w-full rounded-xl border border-ink/10 bg-canvas px-4 py-3 text-sm outline-none placeholder:text-ink/40 focus:border-ink/30"
+      />
+      {!q && (
+        <>
+          <div className="mt-4 text-[10px] uppercase tracking-[0.24em] text-ink/40">Recent</div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {recents.map((r) => (
+              <button key={r} onClick={() => { onChange(r); onClose(); }} className="rounded-full border border-ink/10 px-3 py-1.5 text-xs text-ink/70 hover:border-ink hover:text-ink">{r}</button>
+            ))}
+          </div>
+        </>
+      )}
+      <div className="mt-4 text-[10px] uppercase tracking-[0.24em] text-ink/40">Suggestions</div>
+      <div className="mt-1 max-h-56 overflow-auto">
+        {matches.length === 0 ? (
+          <div className="px-2 py-3 text-sm text-ink/50">No matches</div>
+        ) : matches.map((c) => (
+          <button key={c} onClick={() => { onChange(c); onClose(); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-ink/80 hover:bg-ink/5">
+            <svg className="h-3.5 w-3.5 text-ink/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>
+            {c}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function OptionsList({ options, value, onSelect, suffix = "" }: { options: string[]; value: string; onSelect: (v: string) => void; suffix?: string }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((o) => {
+        const active = o === value;
+        return (
+          <button
+            key={o}
+            onClick={() => onSelect(o)}
+            className={`rounded-full border px-4 py-2 text-sm transition-all ${active ? "border-ink bg-ink text-primary-foreground" : "border-ink/15 text-ink/70 hover:border-ink/40 hover:text-ink"}`}
+          >
+            {o === "Any" ? "Any" : `${o}${suffix}`}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function BudgetRange({ min, max, onChange }: { min: number; max: number; onChange: (min: number, max: number) => void }) {
+  const step = 100_000;
+  return (
+    <div className="px-1">
+      <div className="flex items-center justify-between text-sm font-medium">
+        <span>{formatPrice(min)}</span>
+        <span>{formatPrice(max)}</span>
+      </div>
+      <div className="relative mt-4 h-8">
+        <div className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-ink/10" />
+        <div
+          className="absolute top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-gold"
+          style={{ left: `${(min / BUDGET_MAX) * 100}%`, right: `${100 - (max / BUDGET_MAX) * 100}%` }}
+        />
+        <input
+          type="range" min={BUDGET_MIN} max={BUDGET_MAX} step={step} value={min}
+          onChange={(e) => onChange(Math.min(parseInt(e.target.value), max - step), max)}
+          className="pointer-events-none absolute inset-0 w-full appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-ink [&::-webkit-slider-thumb]:bg-canvas [&::-webkit-slider-thumb]:shadow"
+        />
+        <input
+          type="range" min={BUDGET_MIN} max={BUDGET_MAX} step={step} value={max}
+          onChange={(e) => onChange(min, Math.max(parseInt(e.target.value), min + step))}
+          className="pointer-events-none absolute inset-0 w-full appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-ink [&::-webkit-slider-thumb]:bg-canvas [&::-webkit-slider-thumb]:shadow"
+        />
+      </div>
+      <div className="mt-3 flex items-center justify-between text-[11px] text-ink/50">
+        <span>{formatPrice(BUDGET_MIN)}</span>
+        <button onClick={() => onChange(BUDGET_MIN, BUDGET_MAX)} className="text-ink/60 underline-offset-4 hover:underline">Reset</button>
+        <span>{formatPrice(BUDGET_MAX)}+</span>
+      </div>
+    </div>
   );
 }
 
@@ -209,17 +432,9 @@ function FilterDrawer({ filters, toggle, onClose }: { filters: string[]; toggle:
 
 /* -------------------- Grid -------------------- */
 
-const spanClass: Record<NonNullable<Property["span"]>, string> = {
-  sm: "md:col-span-4",
-  md: "md:col-span-4",
-  lg: "md:col-span-8 md:row-span-2",
-  wide: "md:col-span-8",
-  tall: "md:col-span-4 md:row-span-2",
-};
-
-function MosaicGrid({ items, onQuickView }: { items: Property[]; onQuickView: (p: Property) => void }) {
+function PropertyGrid({ items, onQuickView }: { items: Property[]; onQuickView: (p: Property) => void }) {
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-12 md:auto-rows-[280px]">
+    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((p, i) => (
         <motion.div
           key={p.id}
@@ -227,16 +442,15 @@ function MosaicGrid({ items, onQuickView }: { items: Property[]; onQuickView: (p
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.7, ease, delay: (i % 3) * 0.08 }}
-          className={`${spanClass[p.span ?? "sm"]} md:row-span-1`}
         >
-          <PropertyCard p={p} onQuickView={onQuickView} tall={p.span === "lg" || p.span === "tall"} />
+          <PropertyCard p={p} onQuickView={onQuickView} />
         </motion.div>
       ))}
     </div>
   );
 }
 
-function PropertyCard({ p, onQuickView, tall = false }: { p: Property; onQuickView: (p: Property) => void; tall?: boolean }) {
+function PropertyCard({ p, onQuickView }: { p: Property; onQuickView: (p: Property) => void }) {
   const [imgIdx, setImgIdx] = useState(0);
   const [saved, setSaved] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -254,7 +468,7 @@ function PropertyCard({ p, onQuickView, tall = false }: { p: Property; onQuickVi
     <div
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
-      className="group relative flex h-full min-h-[280px] flex-col overflow-hidden rounded-3xl bg-ink text-primary-foreground transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_40px_80px_-30px_rgba(0,0,0,0.35)]"
+      className="group relative flex aspect-[4/5] flex-col overflow-hidden rounded-3xl bg-ink text-primary-foreground transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_40px_80px_-30px_rgba(0,0,0,0.35)]"
     >
       <div className="absolute inset-0">
         {p.images.map((src, i) => (
@@ -262,6 +476,8 @@ function PropertyCard({ p, onQuickView, tall = false }: { p: Property; onQuickVi
             key={i}
             src={src}
             alt={p.title}
+            loading="lazy"
+            decoding="async"
             className={`absolute inset-0 h-full w-full object-cover transition-all duration-[1400ms] ease-out group-hover:scale-110 ${i === imgIdx ? "opacity-100" : "opacity-0"}`}
           />
         ))}
@@ -292,9 +508,9 @@ function PropertyCard({ p, onQuickView, tall = false }: { p: Property; onQuickVi
               <svg className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>
               <span className="truncate">{p.location}</span>
             </div>
-            <h3 className={`mt-1 font-display font-medium tracking-tight ${tall ? "text-3xl" : "text-xl"}`}>{p.title}</h3>
+            <h3 className="mt-1 font-display text-xl font-medium tracking-tight">{p.title}</h3>
           </div>
-          <div className={`shrink-0 font-display font-medium tracking-tight transition-transform duration-500 group-hover:scale-[1.06] ${tall ? "text-3xl" : "text-xl"}`}>
+          <div className="shrink-0 font-display text-xl font-medium tracking-tight transition-transform duration-500 group-hover:scale-[1.06]">
             {formatPrice(p.price)}
           </div>
         </div>
@@ -321,6 +537,7 @@ function PropertyCard({ p, onQuickView, tall = false }: { p: Property; onQuickVi
             <Link
               to="/properties/$id"
               params={{ id: p.id }}
+              onClick={(e) => e.stopPropagation()}
               className="rounded-full bg-gold px-3 py-1.5 text-[11px] font-medium text-ink transition-all hover:scale-105"
             >
               Schedule viewing
@@ -330,6 +547,11 @@ function PropertyCard({ p, onQuickView, tall = false }: { p: Property; onQuickVi
       </div>
 
       <Link to="/properties/$id" params={{ id: p.id }} className="absolute inset-0 z-[5]" aria-label={p.title} />
+
+      {/* Arrow cue */}
+      <div className="pointer-events-none absolute right-6 top-20 z-10 grid h-10 w-10 place-items-center rounded-full bg-gold text-ink opacity-0 translate-x-2 transition-all duration-500 group-hover:opacity-100 group-hover:translate-x-0">
+        <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+      </div>
     </div>
   );
 }
