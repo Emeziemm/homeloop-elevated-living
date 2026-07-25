@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { SiteNav } from "@/components/site-nav";
 import { filterChips, formatPrice, properties, type Property } from "@/lib/properties";
 import heroVilla from "@/assets/hero-villa.jpg";
@@ -26,7 +26,6 @@ function PropertiesPage() {
   const [quickView, setQuickView] = useState<Property | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
   const toggle = (c: string) =>
@@ -47,13 +46,7 @@ function PropertiesPage() {
     return list;
   }, [filters]);
 
-  useEffect(() => {
-    setLoading(true);
-    const t = setTimeout(() => setLoading(false), 380);
-    return () => clearTimeout(t);
-  }, [filters]);
-
-  const perPage = 9;
+  const perPage = 6;
   const pages = Math.max(1, Math.ceil(filtered.length / perPage));
   const visible = filtered.slice((page - 1) * perPage, page * perPage);
 
@@ -64,15 +57,13 @@ function PropertiesPage() {
       <StickyFilters filters={filters} toggle={toggle} onOpenDrawer={() => setDrawerOpen(true)} />
 
       <section ref={gridRef} className="mx-auto max-w-[1400px] px-6 pb-24 pt-14 lg:px-10">
-        {loading ? (
-          <SkeletonGrid />
-        ) : filtered.length === 0 ? (
+        {filtered.length === 0 ? (
           <EmptyState onReset={() => setFilters([])} />
         ) : (
-          <UniformGrid items={visible} onQuickView={setQuickView} />
+          <MosaicGrid items={visible} onQuickView={setQuickView} />
         )}
 
-        {!loading && filtered.length > 0 && pages > 1 && (
+        {filtered.length > 0 && (
           <Pagination page={page} pages={pages} onPage={(p) => { setPage(p); gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
         )}
       </section>
@@ -218,117 +209,127 @@ function FilterDrawer({ filters, toggle, onClose }: { filters: string[]; toggle:
 
 /* -------------------- Grid -------------------- */
 
-function UniformGrid({ items, onQuickView }: { items: Property[]; onQuickView: (p: Property) => void }) {
+const spanClass: Record<NonNullable<Property["span"]>, string> = {
+  sm: "md:col-span-4",
+  md: "md:col-span-4",
+  lg: "md:col-span-8 md:row-span-2",
+  wide: "md:col-span-8",
+  tall: "md:col-span-4 md:row-span-2",
+};
+
+function MosaicGrid({ items, onQuickView }: { items: Property[]; onQuickView: (p: Property) => void }) {
   return (
-    <motion.div
-      layout
-      className="grid grid-cols-1 gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3"
-    >
-      <AnimatePresence mode="popLayout">
-        {items.map((p, i) => (
-          <motion.div
-            key={p.id}
-            layout
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.6, ease, delay: (i % 3) * 0.06 }}
-          >
-            <PropertyCard p={p} onQuickView={onQuickView} />
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </motion.div>
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-12 md:auto-rows-[280px]">
+      {items.map((p, i) => (
+        <motion.div
+          key={p.id}
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7, ease, delay: (i % 3) * 0.08 }}
+          className={`${spanClass[p.span ?? "sm"]} md:row-span-1`}
+        >
+          <PropertyCard p={p} onQuickView={onQuickView} tall={p.span === "lg" || p.span === "tall"} />
+        </motion.div>
+      ))}
+    </div>
   );
 }
 
-function PropertyCard({ p, onQuickView }: { p: Property; onQuickView: (p: Property) => void }) {
+function PropertyCard({ p, onQuickView, tall = false }: { p: Property; onQuickView: (p: Property) => void; tall?: boolean }) {
+  const [imgIdx, setImgIdx] = useState(0);
   const [saved, setSaved] = useState(false);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const onEnter = () => {
+    timer.current = setInterval(() => setImgIdx((i) => (i + 1) % p.images.length), 1400);
+  };
+  const onLeave = () => {
+    if (timer.current) clearInterval(timer.current);
+    timer.current = null;
+    setImgIdx(0);
+  };
 
   return (
-    <Link
-      to="/properties/$id"
-      params={{ id: p.id }}
-      className="group block focus:outline-none"
-      aria-label={`${p.title} — ${p.location}`}
+    <div
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+      className="group relative flex h-full min-h-[280px] flex-col overflow-hidden rounded-3xl bg-ink text-primary-foreground transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_40px_80px_-30px_rgba(0,0,0,0.35)]"
     >
-      {/* Image */}
-      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-ink/5 transition-all duration-500 group-hover:-translate-y-1 group-hover:shadow-[0_30px_60px_-30px_rgba(0,0,0,0.35)]">
-        <img
-          src={p.images[0]}
-          alt={p.title}
-          loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.04]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/50 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-
-        {/* Top row */}
-        <div className="absolute inset-x-0 top-0 flex items-start justify-between p-4">
-          <span className="rounded-full bg-canvas/95 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-ink backdrop-blur">
-            {p.status}
-          </span>
-          <button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSaved((s) => !s); }}
-            className="grid h-9 w-9 place-items-center rounded-full border border-primary-foreground/30 bg-ink/30 backdrop-blur transition-all hover:scale-110 hover:border-gold"
-            aria-label="Save property"
-          >
-            <svg className={`h-4 w-4 transition-all ${saved ? "fill-gold stroke-gold" : "fill-none stroke-primary-foreground"}`} viewBox="0 0 24 24" strokeWidth="1.6">
-              <path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6C19 16.5 12 21 12 21z" />
-            </svg>
-          </button>
-        </div>
-
-        {/* View indicator */}
-        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-4 opacity-0 translate-y-2 transition-all duration-500 group-hover:opacity-100 group-hover:translate-y-0">
-          <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-primary-foreground/90">View property</span>
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-gold text-ink">
-            <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
-          </span>
-        </div>
+      <div className="absolute inset-0">
+        {p.images.map((src, i) => (
+          <img
+            key={i}
+            src={src}
+            alt={p.title}
+            className={`absolute inset-0 h-full w-full object-cover transition-all duration-[1400ms] ease-out group-hover:scale-110 ${i === imgIdx ? "opacity-100" : "opacity-0"}`}
+          />
+        ))}
+        <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/30 to-transparent opacity-90 transition-opacity duration-500 group-hover:opacity-95" />
       </div>
 
-      {/* Meta */}
-      <div className="mt-5 flex items-start justify-between gap-4 transition-transform duration-500 group-hover:-translate-y-0.5">
-        <div className="min-w-0">
-          <h3 className="truncate font-display text-xl font-medium tracking-tight text-ink">{p.title}</h3>
-          <div className="mt-1 flex items-center gap-1.5 text-[13px] text-ink/55">
-            <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>
-            <span className="truncate">{p.location}</span>
-          </div>
-        </div>
-        <div className="shrink-0 font-display text-xl font-medium tracking-tight text-ink transition-colors duration-300 group-hover:text-gold">
-          {formatPrice(p.price)}
-        </div>
-      </div>
-
-      <div className="mt-3 flex items-center gap-4 text-[12px] text-ink/55">
-        <span>{p.beds} beds</span>
-        <span className="h-1 w-1 rounded-full bg-ink/20" />
-        <span>{p.baths} baths</span>
-        <span className="h-1 w-1 rounded-full bg-ink/20" />
-        <span>{p.area} sqm</span>
+      {/* Top row */}
+      <div className="relative z-10 flex items-start justify-between p-6">
+        <span className="rounded-full bg-canvas/90 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-ink backdrop-blur">
+          {p.status}
+        </span>
         <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onQuickView(p); }}
-          className="ml-auto text-[11px] font-medium uppercase tracking-[0.16em] text-ink/50 opacity-0 transition-all duration-300 group-hover:opacity-100 hover:text-gold"
+          onClick={(e) => { e.stopPropagation(); setSaved((s) => !s); }}
+          className="grid h-9 w-9 place-items-center rounded-full border border-primary-foreground/25 bg-ink/40 backdrop-blur transition-all hover:scale-110 hover:border-gold"
+          aria-label="Save property"
         >
-          Quick view
+          <svg className={`h-4 w-4 transition-all ${saved ? "fill-gold stroke-gold" : "fill-none stroke-primary-foreground"}`} viewBox="0 0 24 24" strokeWidth="1.6">
+            <path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6C19 16.5 12 21 12 21z" />
+          </svg>
         </button>
       </div>
-    </Link>
-  );
-}
 
-function SkeletonGrid() {
-  return (
-    <div className="grid grid-cols-1 gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="animate-pulse">
-          <div className="aspect-[4/5] w-full rounded-2xl bg-ink/[0.06]" />
-          <div className="mt-5 h-5 w-2/3 rounded bg-ink/[0.06]" />
-          <div className="mt-2 h-3 w-1/2 rounded bg-ink/[0.05]" />
-          <div className="mt-4 h-3 w-1/3 rounded bg-ink/[0.05]" />
+      {/* Bottom content */}
+      <div className="relative z-10 mt-auto flex flex-col gap-3 p-6">
+        <div className="flex items-end justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-[12px] text-primary-foreground/70">
+              <svg className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>
+              <span className="truncate">{p.location}</span>
+            </div>
+            <h3 className={`mt-1 font-display font-medium tracking-tight ${tall ? "text-3xl" : "text-xl"}`}>{p.title}</h3>
+          </div>
+          <div className={`shrink-0 font-display font-medium tracking-tight transition-transform duration-500 group-hover:scale-[1.06] ${tall ? "text-3xl" : "text-xl"}`}>
+            {formatPrice(p.price)}
+          </div>
         </div>
-      ))}
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-primary-foreground/70">
+          <span>{p.beds} beds</span>
+          <span className="opacity-40">·</span>
+          <span>{p.baths} baths</span>
+          <span className="opacity-40">·</span>
+          <span>{p.area} sqm</span>
+        </div>
+
+        {/* Reveal row */}
+        <div className="mt-2 grid grid-cols-[auto_1fr_auto] items-center gap-3 opacity-0 translate-y-3 transition-all duration-500 group-hover:opacity-100 group-hover:translate-y-0">
+          <img src={p.agent.avatar} alt={p.agent.name} className="h-8 w-8 rounded-full object-cover ring-2 ring-primary-foreground/20" />
+          <span className="truncate text-[12px] text-primary-foreground/80">{p.agent.name}</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); onQuickView(p); }}
+              className="rounded-full border border-primary-foreground/30 px-3 py-1.5 text-[11px] font-medium text-primary-foreground/90 transition-all hover:border-gold hover:text-gold"
+            >
+              Quick view
+            </button>
+            <Link
+              to="/properties/$id"
+              params={{ id: p.id }}
+              className="rounded-full bg-gold px-3 py-1.5 text-[11px] font-medium text-ink transition-all hover:scale-105"
+            >
+              Schedule viewing
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <Link to="/properties/$id" params={{ id: p.id }} className="absolute inset-0 z-[5]" aria-label={p.title} />
     </div>
   );
 }
