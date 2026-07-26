@@ -1,8 +1,9 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SiteNav } from "@/components/site-nav";
 import { findProperty, formatPrice, properties, type Property } from "@/lib/properties";
+import ctaBg from "@/assets/cta-bg.jpg";
 
 export const Route = createFileRoute("/properties/$id")({
   loader: ({ params }) => {
@@ -39,6 +40,7 @@ const ease = [0.22, 1, 0.36, 1] as const;
 function PropertyDetail() {
   const p = Route.useLoaderData();
   const [galleryOpen, setGalleryOpen] = useState<number | null>(null);
+  const [saved, setSaved] = useState(false);
   const similar = useMemo(() => properties.filter((x) => x.id !== p.id).slice(0, 3), [p.id]);
 
   const { scrollYProgress } = useScroll();
@@ -49,13 +51,15 @@ function PropertyDetail() {
       <motion.div style={{ width: progress }} className="fixed inset-x-0 top-0 z-[80] h-[2px] bg-gold" />
       <SiteNav overDark />
 
-      <DetailHero p={p} onOpenGallery={(i) => setGalleryOpen(i)} />
+      <DetailHero p={p} onOpenGallery={(i) => setGalleryOpen(i)} saved={saved} onSave={() => setSaved((s) => !s)} />
+      <FloatingSummary p={p} />
 
       <div className="mx-auto grid max-w-[1400px] gap-16 px-6 py-24 lg:grid-cols-[1fr_380px] lg:gap-20 lg:px-10">
         <main className="min-w-0 space-y-24">
+          <EditorialGallery p={p} onOpen={setGalleryOpen} />
           <Overview p={p} />
-          <Features p={p} />
-          <Gallery p={p} onOpen={setGalleryOpen} />
+          <Highlights p={p} />
+          <Amenities p={p} />
           <FloorPlan />
           <VirtualTour p={p} />
           <MapSection p={p} />
@@ -89,7 +93,7 @@ function PropertyDetail() {
 
 /* -------------------- Hero -------------------- */
 
-function DetailHero({ p, onOpenGallery }: { p: Property; onOpenGallery: (i: number) => void }) {
+function DetailHero({ p, onOpenGallery, saved, onSave }: { p: Property; onOpenGallery: (i: number) => void; saved: boolean; onSave: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "18%"]);
@@ -98,10 +102,19 @@ function DetailHero({ p, onOpenGallery }: { p: Property; onOpenGallery: (i: numb
     <section ref={ref} className="relative min-h-[95svh] w-full overflow-hidden bg-ink text-primary-foreground">
       <motion.div style={{ y }} className="absolute inset-0">
         <img src={p.images[0]} alt={p.title} className="h-full w-full object-cover animate-hl-zoom" />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/30 to-ink/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/20" />
+        <div className="absolute inset-0 bg-gradient-to-b from-ink/40 via-transparent to-transparent" />
       </motion.div>
 
-      <div className="relative z-10 mx-auto grid min-h-[95svh] max-w-[1400px] grid-cols-1 gap-8 px-6 pb-14 pt-40 lg:grid-cols-12 lg:px-10 lg:pb-20">
+      <div className="relative z-10 mx-auto grid min-h-[95svh] max-w-[1400px] grid-cols-1 gap-8 px-6 pb-24 pt-32 lg:grid-cols-12 lg:px-10 lg:pb-32 lg:pt-36">
+        <motion.nav initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease, delay: 0.2 }}
+          className="lg:col-span-12 flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-primary-foreground/60">
+          <Link to="/" className="hover:text-primary-foreground">Home</Link>
+          <span>/</span>
+          <Link to="/properties" className="hover:text-primary-foreground">Properties</Link>
+          <span>/</span>
+          <span className="text-primary-foreground/90 truncate">{p.title}</span>
+        </motion.nav>
         <div className="lg:col-span-8 lg:self-end">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease }} className="text-eyebrow text-primary-foreground/60">
             <span className="inline-block h-px w-6 bg-current opacity-60 mr-2 align-middle" />
@@ -119,14 +132,20 @@ function DetailHero({ p, onOpenGallery }: { p: Property; onOpenGallery: (i: numb
             <span className="text-sm">{p.location}</span>
           </motion.div>
 
-          <motion.button
-            onClick={() => onOpenGallery(0)}
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.9, ease, delay: 0.7 }}
-            className="mt-10 inline-flex items-center gap-2 rounded-full border border-primary-foreground/30 bg-ink/40 px-5 py-2.5 text-[13px] font-medium text-primary-foreground backdrop-blur transition-all hover:border-gold hover:text-gold"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="11" r="2" /><path d="M21 17l-6-6-8 8" /></svg>
-            View all {p.images.length} photos
-          </motion.button>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease, delay: 0.7 }} className="mt-10 flex flex-wrap items-center gap-3">
+            <button className="group inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3 text-[13px] font-medium text-ink transition-transform hover:scale-[1.03]">
+              Book a viewing
+              <svg className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.5" fill="none"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+            </button>
+            <button onClick={onSave} className={`inline-flex items-center gap-2 rounded-full border px-6 py-3 text-[13px] font-medium backdrop-blur transition-all ${saved ? "border-gold bg-gold/20 text-gold" : "border-primary-foreground/30 bg-ink/30 text-primary-foreground hover:border-primary-foreground"}`}>
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.6"><path d="M12 21s-7-4.35-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.65-9.5 9-9.5 9z" /></svg>
+              {saved ? "Saved" : "Save property"}
+            </button>
+            <button onClick={() => onOpenGallery(0)} className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/30 bg-ink/30 px-5 py-3 text-[13px] font-medium text-primary-foreground backdrop-blur transition-all hover:border-primary-foreground">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="11" r="2" /><path d="M21 17l-6-6-8 8" /></svg>
+              {p.images.length} photos
+            </button>
+          </motion.div>
         </div>
 
         <div className="lg:col-span-4 lg:self-end">
@@ -151,6 +170,34 @@ function DetailHero({ p, onOpenGallery }: { p: Property; onOpenGallery: (i: numb
   );
 }
 
+/* -------------------- Floating summary -------------------- */
+
+function FloatingSummary({ p }: { p: Property }) {
+  const ref = `HL-${p.id.slice(0, 4).toUpperCase()}-${p.yearBuilt}`;
+  const items: [string, string][] = [
+    ["Type", p.category],
+    ["Availability", p.status],
+    ["Year built", `${p.yearBuilt}`],
+    ["Lot size", `${Math.round(p.area * 1.6)} m²`],
+    ["Parking", `${p.parking} spaces`],
+    ["Energy", p.energy],
+    ["Reference", ref],
+  ];
+  return (
+    <div className="relative z-20 mx-auto -mt-16 max-w-[1400px] px-6 lg:-mt-20 lg:px-10">
+      <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.9, ease }}
+        className="grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-ink/10 bg-ink/10 shadow-[0_40px_120px_-40px_rgba(0,0,0,0.35)] sm:grid-cols-3 lg:grid-cols-7">
+        {items.map(([k, v]) => (
+          <div key={k} className="bg-canvas px-5 py-6">
+            <div className="text-[10px] uppercase tracking-[0.22em] text-ink/50">{k}</div>
+            <div className="mt-2 font-display text-base font-medium tracking-tight">{v}</div>
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
 /* -------------------- Sections -------------------- */
 
 function SectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
@@ -162,37 +209,91 @@ function SectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
   );
 }
 
-function Overview({ p }: { p: Property }) {
+function EditorialGallery({ p, onOpen }: { p: Property; onOpen: (i: number) => void }) {
+  const imgs = p.images.concat(p.images).slice(0, 5);
   return (
     <section>
-      <SectionHeader eyebrow="Overview" title="A quiet architectural statement." />
-      <motion.p initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.8, ease, delay: 0.15 }}
-        className="mt-8 max-w-2xl text-lg leading-relaxed text-ink/75">
-        {p.description}
-      </motion.p>
+      <SectionHeader eyebrow="Gallery" title="Step inside." />
+      <div className="mt-10 hidden gap-4 md:grid md:grid-cols-4 md:grid-rows-2">
+        <motion.button initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.8, ease }}
+          onClick={() => onOpen(0)} className="group relative col-span-2 row-span-2 overflow-hidden rounded-3xl bg-ink/5">
+          <img src={imgs[0]} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-[1400ms] group-hover:scale-105" />
+        </motion.button>
+        {imgs.slice(1, 5).map((src, i) => (
+          <motion.button key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.7, ease, delay: 0.08 * (i + 1) }}
+            onClick={() => onOpen((i + 1) % p.images.length)} className="group relative overflow-hidden rounded-3xl bg-ink/5">
+            <img src={src} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-[1400ms] group-hover:scale-110" />
+          </motion.button>
+        ))}
+      </div>
+      {/* Mobile swipeable */}
+      <div className="mt-8 -mx-6 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-2 md:hidden">
+        {imgs.map((src, i) => (
+          <button key={i} onClick={() => onOpen(i % p.images.length)} className="relative aspect-[4/5] w-[78%] shrink-0 snap-center overflow-hidden rounded-2xl bg-ink/5">
+            <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+          </button>
+        ))}
+      </div>
+      <button onClick={() => onOpen(0)} className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-ink/70 hover:text-ink">
+        View all {p.images.length} photos
+        <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.5" fill="none"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+      </button>
     </section>
   );
 }
 
-function Features({ p }: { p: Property }) {
-  const items: [string, string][] = [
-    [`${p.beds}`, "Bedrooms"], [`${p.baths}`, "Bathrooms"], [`${p.parking}`, "Parking"],
-    [`${p.area}`, "Sqm"], [`${p.yearBuilt}`, "Built"], [p.energy, "Energy"],
-    ...p.amenities.slice(0, 4).map((a) => ["·", a] as [string, string]),
+function Overview({ p }: { p: Property }) {
+  const paras: [string, string][] = [
+    ["Architecture", p.description],
+    ["Interior design", `Inside, ${p.title.split(" ")[0]} unfolds in a slow procession of rooms — hand-troweled plaster meets brushed oak underfoot, and honed travertine framing marks each threshold. A restrained material palette lets the light and the landscape do the talking.`],
+    ["Natural lighting", `Full-height glazing follows the sun through the day, from the still morning light of the eastern courtyard to the amber wash across the western terraces. Every principal room enjoys at least two light exposures.`],
+    ["Outdoor living", `Terraces, gardens and a heated infinity pool extend the living plan into the open air — a private stage for long lunches, quiet evenings and the occasional dinner for twenty under the olive trees.`],
   ];
   return (
     <section>
-      <SectionHeader eyebrow="Features" title="Every detail, considered." />
-      <div className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-ink/10 bg-ink/10 md:grid-cols-3">
-        {items.map(([v, l], i) => (
-          <motion.div
-            key={l + i}
-            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.6, ease, delay: (i % 3) * 0.08 }}
-            className="bg-canvas p-6 md:p-8"
-          >
-            <div className="font-display text-4xl font-medium tracking-tight">{v}</div>
-            <div className="mt-2 text-[11px] uppercase tracking-[0.24em] text-ink/50">{l}</div>
+      <SectionHeader eyebrow="Overview" title="A quiet architectural statement." />
+      <div className="mt-10 grid gap-12 lg:grid-cols-[minmax(0,640px)_1fr]">
+        <div className="space-y-10">
+          {paras.map(([h, body], i) => (
+            <motion.div key={h} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.8, ease, delay: i * 0.08 }}>
+              <div className="text-[11px] uppercase tracking-[0.24em] text-ink/50">{h}</div>
+              <p className="mt-3 text-[17px] leading-[1.75] text-ink/75">{body}</p>
+            </motion.div>
+          ))}
+        </div>
+        <motion.aside initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.9, ease }} className="hidden lg:block">
+          <div className="sticky top-32 space-y-6 border-l border-ink/10 pl-8">
+            <div className="font-serif-display text-2xl leading-snug text-ink/80">
+              "A house that keeps its promises — quiet where you need quiet, generous where you need to gather."
+            </div>
+            <div className="text-[11px] uppercase tracking-[0.24em] text-ink/50">— The architect</div>
+          </div>
+        </motion.aside>
+      </div>
+    </section>
+  );
+}
+
+function Highlights({ p }: { p: Property }) {
+  const items: [string, string][] = [
+    ["Bedrooms", `${p.beds}`],
+    ["Bathrooms", `${p.baths}`],
+    ["Floor area", `${p.area} m²`],
+    ["Land size", `${Math.round(p.area * 1.6)} m²`],
+    ["Parking", `${p.parking} cars`],
+    ["Year built", `${p.yearBuilt}`],
+    ["Energy", p.energy],
+    ["Reference", `HL-${p.id.slice(0, 4).toUpperCase()}`],
+  ];
+  return (
+    <section>
+      <SectionHeader eyebrow="Highlights" title="Every detail, considered." />
+      <div className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-ink/10 bg-ink/10 md:grid-cols-4">
+        {items.map(([k, v], i) => (
+          <motion.div key={k} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.6, ease, delay: (i % 4) * 0.08 }} className="bg-canvas p-6 md:p-8">
+            <div className="font-display text-3xl font-medium tracking-tight md:text-4xl">{v}</div>
+            <div className="mt-2 text-[11px] uppercase tracking-[0.24em] text-ink/50">{k}</div>
           </motion.div>
         ))}
       </div>
@@ -200,24 +301,19 @@ function Features({ p }: { p: Property }) {
   );
 }
 
-function Gallery({ p, onOpen }: { p: Property; onOpen: (i: number) => void }) {
+function Amenities({ p }: { p: Property }) {
   return (
     <section>
-      <SectionHeader eyebrow="Gallery" title="Step inside." />
-      <div className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-        {p.images.concat(p.images).slice(0, 6).map((src, i) => (
-          <motion.button
-            key={i}
-            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.7, ease, delay: (i % 4) * 0.07 }}
-            onClick={() => onOpen(i % p.images.length)}
-            className={`group relative overflow-hidden rounded-2xl bg-ink/5 ${i === 0 ? "col-span-2 row-span-2 aspect-square" : "aspect-[4/5]"}`}
-          >
-            <img src={src} alt="" className="h-full w-full object-cover transition-transform duration-[1200ms] group-hover:scale-110" />
-            <div className="absolute inset-0 bg-ink/0 transition-colors group-hover:bg-ink/10" />
-          </motion.button>
+      <SectionHeader eyebrow="Amenities" title="What's included." />
+      <ul className="mt-10 grid grid-cols-1 gap-x-8 gap-y-3 border-t border-ink/10 pt-8 sm:grid-cols-2 lg:grid-cols-3">
+        {p.amenities.map((a, i) => (
+          <motion.li key={a} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.5, ease, delay: (i % 6) * 0.05 }}
+            className="flex items-center gap-3 border-b border-ink/5 py-3 text-[15px] text-ink/75">
+            <span className="h-1 w-1 rounded-full bg-gold" />
+            {a}
+          </motion.li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }
@@ -513,14 +609,19 @@ function SimilarSection({ items }: { items: Property[] }) {
 function FinalCTA() {
   return (
     <section className="relative overflow-hidden bg-ink py-28 text-primary-foreground">
-      <img src="/__missing__" alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-30" onError={(e) => (e.currentTarget.style.display = "none")} />
+      <img src={ctaBg} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40" />
+      <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/70 to-ink/60" />
       <div className="mx-auto max-w-[1200px] px-6 text-center lg:px-10">
         <motion.h2 initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.9, ease }}
-          className="mx-auto max-w-3xl text-[clamp(2.4rem,6vw,5rem)] font-medium leading-[1] tracking-[-0.03em]">
-          Ready to see it <span className="font-serif-display italic text-gold">in person?</span>
+          className="relative mx-auto max-w-3xl text-[clamp(2.4rem,6vw,5rem)] font-medium leading-[1] tracking-[-0.03em]">
+          Ready to experience this home <span className="font-serif-display italic text-gold">in person?</span>
         </motion.h2>
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.9, ease, delay: 0.2 }}
-          className="mt-10 flex flex-wrap items-center justify-center gap-3">
+        <motion.p initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.9, ease, delay: 0.15 }}
+          className="relative mx-auto mt-6 max-w-xl text-[15px] leading-relaxed text-primary-foreground/70">
+          Schedule a private viewing at your pace. Our agents host in-person and virtual tours, seven days a week.
+        </motion.p>
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.9, ease, delay: 0.25 }}
+          className="relative mt-10 flex flex-wrap items-center justify-center gap-3">
           <button className="rounded-full bg-gold px-6 py-3 text-sm font-medium text-ink hover:scale-105 transition-transform">Book viewing</button>
           <button className="rounded-full border border-primary-foreground/25 px-6 py-3 text-sm font-medium hover:bg-primary-foreground hover:text-ink transition-all">Contact agent</button>
         </motion.div>
@@ -544,6 +645,15 @@ function Footer() {
 
 function FullscreenGallery({ images, start, onClose }: { images: string[]; start: number; onClose: () => void }) {
   const [i, setI] = useState(start);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") setI((n) => (n + 1) % images.length);
+      if (e.key === "ArrowLeft") setI((n) => (n - 1 + images.length) % images.length);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [images.length, onClose]);
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[90] bg-ink">
       <button onClick={onClose} className="absolute right-6 top-6 z-10 grid h-11 w-11 place-items-center rounded-full border border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground hover:text-ink" aria-label="Close">
