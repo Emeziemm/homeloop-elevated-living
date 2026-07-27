@@ -130,3 +130,8 @@
 @utility animate-hl-zoom { animation: hl-zoom 30s ease-out forwards; }
 @utility animate-hl-marquee { animation: hl-marquee 40s linear infinite; }
 @utility animate-hl-shimmer { animation: hl-shimmer 4s ease-in-out infinite; }
+
+@utility mask-fade-b {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+}
