@@ -464,11 +464,16 @@ function PropertyCard({ p, onQuickView }: { p: Property; onQuickView: (p: Proper
     setImgIdx(0);
   };
 
+  const stop = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); };
+
   return (
-    <div
+    <Link
+      to="/properties/$id"
+      params={{ id: p.id }}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
-      className="group relative flex aspect-[4/5] flex-col overflow-hidden rounded-3xl bg-ink text-primary-foreground transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_40px_80px_-30px_rgba(0,0,0,0.35)]"
+      className="group relative flex aspect-[4/5] cursor-pointer flex-col overflow-hidden rounded-3xl bg-ink text-primary-foreground transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_40px_80px_-30px_rgba(0,0,0,0.35)]"
+      aria-label={`View ${p.title}`}
     >
       <div className="absolute inset-0">
         {p.images.map((src, i) => (
@@ -490,7 +495,7 @@ function PropertyCard({ p, onQuickView }: { p: Property; onQuickView: (p: Proper
           {p.status}
         </span>
         <button
-          onClick={(e) => { e.stopPropagation(); setSaved((s) => !s); }}
+          onClick={(e) => { stop(e); setSaved((s) => !s); }}
           className="grid h-9 w-9 place-items-center rounded-full border border-primary-foreground/25 bg-ink/40 backdrop-blur transition-all hover:scale-110 hover:border-gold"
           aria-label="Save property"
         >
@@ -529,30 +534,23 @@ function PropertyCard({ p, onQuickView }: { p: Property; onQuickView: (p: Proper
           <span className="truncate text-[12px] text-primary-foreground/80">{p.agent.name}</span>
           <div className="flex items-center gap-2">
             <button
-              onClick={(e) => { e.stopPropagation(); onQuickView(p); }}
+              onClick={(e) => { stop(e); onQuickView(p); }}
               className="rounded-full border border-primary-foreground/30 px-3 py-1.5 text-[11px] font-medium text-primary-foreground/90 transition-all hover:border-gold hover:text-gold"
             >
               Quick view
             </button>
-            <Link
-              to="/properties/$id"
-              params={{ id: p.id }}
-              onClick={(e) => e.stopPropagation()}
-              className="rounded-full bg-gold px-3 py-1.5 text-[11px] font-medium text-ink transition-all hover:scale-105"
-            >
+            <span className="rounded-full bg-gold px-3 py-1.5 text-[11px] font-medium text-ink transition-all group-hover:scale-105">
               Schedule viewing
-            </Link>
+            </span>
           </div>
         </div>
       </div>
-
-      <Link to="/properties/$id" params={{ id: p.id }} className="absolute inset-0 z-[5]" aria-label={p.title} />
 
       {/* Arrow cue */}
       <div className="pointer-events-none absolute right-6 top-20 z-10 grid h-10 w-10 place-items-center rounded-full bg-gold text-ink opacity-0 translate-x-2 transition-all duration-500 group-hover:opacity-100 group-hover:translate-x-0">
         <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
       </div>
-    </div>
+    </Link>
   );
 }
 
