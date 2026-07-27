@@ -23,7 +23,17 @@ export type Property = {
   description: string;
   amenities: string[];
   nearby: { label: string; distance: string }[];
-  agent: { name: string; role: string; avatar: string; sold: number; years: number; phone: string };
+  agent: {
+    name: string;
+    role: string;
+    avatar: string;
+    sold: number;
+    years: number;
+    phone: string;
+    email: string;
+    responseTime: string;
+    languages: string[];
+  };
   featured?: boolean;
   yearBuilt: number;
   parking: number;
@@ -31,18 +41,25 @@ export type Property = {
   lat: number;
   lng: number;
   span?: "sm" | "md" | "lg" | "wide" | "tall";
+  architecturalStyle: string;
+  interiorFinish: string;
+  lotSize: number;
+  livingSpace: number;
+  floorPlan?: string;
+  virtualTour?: string;
+  lifestyle: { title: string; body: string; img: string }[];
 };
 
 const agents = [
-  { name: "Elena Marchetti", role: "Senior Partner · Coastal", avatar: agent1, sold: 184, years: 12, phone: "+39 02 555 0142" },
-  { name: "Julien Aubert", role: "Director · Alpine & Lakes", avatar: agent2, sold: 137, years: 9, phone: "+33 4 89 55 0198" },
-  { name: "Amara Okafor", role: "Head of Private Sales", avatar: agent3, sold: 221, years: 14, phone: "+44 20 7946 0912" },
+  { name: "Elena Marchetti", role: "Senior Partner · Coastal", avatar: agent1, sold: 184, years: 12, phone: "+39 02 555 0142", email: "elena@homeloop.studio", responseTime: "under 1 hour", languages: ["Italian", "English", "French"] },
+  { name: "Julien Aubert", role: "Director · Alpine & Lakes", avatar: agent2, sold: 137, years: 9, phone: "+33 4 89 55 0198", email: "julien@homeloop.studio", responseTime: "under 2 hours", languages: ["French", "English", "German"] },
+  { name: "Amara Okafor", role: "Head of Private Sales", avatar: agent3, sold: 221, years: 14, phone: "+44 20 7946 0912", email: "amara@homeloop.studio", responseTime: "under 30 minutes", languages: ["English", "Spanish", "Portuguese"] },
 ];
 
 const amenities = [
   "Infinity pool", "Private garden", "Home cinema", "Wine cellar", "Smart home",
   "Sauna & spa", "Sea views", "Chef's kitchen", "Home office", "Underfloor heating",
-  "EV charging", "Panic room",
+  "EV charging", "Panic room", "Gym", "Balcony", "Security", "Office",
 ];
 
 const nearby = [
@@ -52,6 +69,27 @@ const nearby = [
   { label: "Marina & beach club", distance: "0.6 km" },
   { label: "Central park", distance: "0.4 km" },
   { label: "High-speed rail", distance: "3.1 km" },
+];
+
+const architecturalStyles = ["Mediterranean contemporary", "Brutalist restoration", "Minimalist glass pavilion", "Provençal farmhouse", "Renaissance palazzo", "Coastal modernist"];
+const interiorFinishes = ["Hand-troweled plaster & brushed oak", "Honed travertine & walnut", "Microcement & blackened steel", "Limewashed stone & ash", "Polished marble & brass", "Raw concrete & cedar"];
+
+const lifestyleSets = [
+  [
+    { title: "The neighbourhood", body: "Cobbled walking streets, morning light on stone facades, and cafés that have belonged to the same families for generations." },
+    { title: "Schools & learning", body: "Three internationally accredited schools within a fifteen-minute drive, plus a beloved public library open seven days a week." },
+    { title: "Everyday commute", body: "Twelve minutes to the coastal expressway, twenty-two minutes to the international terminal by high-speed rail." },
+  ],
+  [
+    { title: "Restaurants", body: "A constellation of family-run trattorias and two-star kitchens within walking distance — dinner rarely needs a reservation." },
+    { title: "Shopping", body: "Independent bookshops, ateliers and a daily market set the rhythm of the week, with the designer quarter ten minutes away." },
+    { title: "Parks & sea", body: "A protected headland trails down to a private cove, and the city's botanical garden sits at the end of the street." },
+  ],
+  [
+    { title: "Walkability", body: "Everything for daily life sits within a fifteen-minute walk — bakery, pharmacy, school, harbour and the evening paseo." },
+    { title: "Entertainment", body: "An open-air amphitheatre, two independent cinemas and a year-round calendar of festivals keep the evenings full." },
+    { title: "Transport", body: "Tram, regional rail and a dedicated ride-share lane connect the district to the airport in under half an hour." },
+  ],
 ];
 
 const base = [
@@ -66,29 +104,42 @@ const base = [
   { title: "Villa Diamante", location: "Marbella, Spain", price: 6_900_000, category: "Villa", beds: 5, baths: 5, area: 560, img: property3, span: "wide", status: "Open House" },
 ] as const;
 
-export const properties: Property[] = base.map((p, i) => ({
-  id: p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
-  title: p.title,
-  location: p.location,
-  price: p.price,
-  status: p.status as Property["status"],
-  category: p.category as Property["category"],
-  beds: p.beds,
-  baths: p.baths,
-  area: p.area,
-  images: [p.img, [property1, property2, property3, heroVilla, area1, area2, area3][(i + 1) % 7], [property2, property3, area1, area2, area3, property1, heroVilla][(i + 2) % 7]],
-  description: `An exceptional ${p.category.toLowerCase()} set within one of ${p.location.split(",")[0]}'s most sought-after enclaves. Reimagined by an award-winning studio, ${p.title} balances quiet architectural restraint with a warm, tactile material palette — hand-troweled plaster, brushed oak, honed travertine — and floor-to-ceiling glass that dissolves the boundary between interior volumes and the landscape beyond.`,
-  amenities: amenities.slice(0, 8 + (i % 4)),
-  nearby,
-  agent: agents[i % agents.length],
-  featured: i < 3,
-  yearBuilt: 2020 + (i % 6),
-  parking: 2 + (i % 3),
-  energy: ["A+", "A", "A+", "A", "B", "A+"][i % 6],
-  lat: 43.6961 + i * 0.02,
-  lng: 7.2619 + i * 0.03,
-  span: p.span as Property["span"],
-}));
+export const properties: Property[] = base.map((p, i) => {
+  const lifestyleImgs = [p.img, [property1, property2, property3, heroVilla, area1, area2, area3][(i + 1) % 7], [property2, property3, area1, area2, area3, property1, heroVilla][(i + 2) % 7]];
+  const lifestyle = lifestyleSets.map((set, s) =>
+    set.map((c, cIdx) => ({ ...c, img: lifestyleImgs[(s + cIdx) % lifestyleImgs.length] })),
+  ).flat();
+  return {
+    id: p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+    title: p.title,
+    location: p.location,
+    price: p.price,
+    status: p.status as Property["status"],
+    category: p.category as Property["category"],
+    beds: p.beds,
+    baths: p.baths,
+    area: p.area,
+    images: [p.img, [property1, property2, property3, heroVilla, area1, area2, area3][(i + 1) % 7], [property2, property3, area1, area2, area3, property1, heroVilla][(i + 2) % 7]],
+    description: `An exceptional ${p.category.toLowerCase()} set within one of ${p.location.split(",")[0]}'s most sought-after enclaves. Reimagined by an award-winning studio, ${p.title} balances quiet architectural restraint with a warm, tactile material palette — hand-troweled plaster, brushed oak, honed travertine — and floor-to-ceiling glass that dissolves the boundary between interior volumes and the landscape beyond.`,
+    amenities: amenities.slice(0, 8 + (i % 8)),
+    nearby,
+    agent: agents[i % agents.length],
+    featured: i < 3,
+    yearBuilt: 2020 + (i % 6),
+    parking: 2 + (i % 3),
+    energy: ["A+", "A", "A+", "A", "B", "A+"][i % 6],
+    lat: 43.6961 + i * 0.02,
+    lng: 7.2619 + i * 0.03,
+    span: p.span as Property["span"],
+    architecturalStyle: architecturalStyles[i % architecturalStyles.length],
+    interiorFinish: interiorFinishes[i % interiorFinishes.length],
+    lotSize: Math.round(p.area * 1.6),
+    livingSpace: p.area,
+    floorPlan: i % 3 === 0 ? undefined : undefined, // floor plan graphic rendered in-page; section shown for all
+    virtualTour: i % 4 === 0 ? undefined : `https://example.com/tour/${p.title.toLowerCase().replace(/\s+/g, "-")}`,
+    lifestyle,
+  };
+});
 
 export function findProperty(id: string) {
   return properties.find((p) => p.id === id);

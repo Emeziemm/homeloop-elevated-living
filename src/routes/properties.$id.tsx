@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SiteNav } from "@/components/site-nav";
+import { PropertyCard } from "@/components/property-card";
 import { findProperty, formatPrice, properties, type Property } from "@/lib/properties";
 import ctaBg from "@/assets/cta-bg.jpg";
 
@@ -41,17 +42,36 @@ function PropertyDetail() {
   const p = Route.useLoaderData();
   const [galleryOpen, setGalleryOpen] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
-  const similar = useMemo(() => properties.filter((x) => x.id !== p.id).slice(0, 3), [p.id]);
+  const [shared, setShared] = useState(false);
+
+  const similar = useMemo(
+    () => properties.filter((x) => x.id !== p.id && x.category === p.category).slice(0, 3),
+    [p.id, p.category],
+  );
 
   const { scrollYProgress } = useScroll();
   const progress = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
+
+  const onShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: p.title, url: window.location.href });
+        return;
+      }
+    } catch { /* user dismissed */ }
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    } catch { /* clipboard blocked */ }
+  };
 
   return (
     <div className="min-h-screen bg-canvas text-ink">
       <motion.div style={{ width: progress }} className="fixed inset-x-0 top-0 z-[80] h-[2px] bg-gold" />
       <SiteNav overDark />
 
-      <DetailHero p={p} onOpenGallery={(i) => setGalleryOpen(i)} saved={saved} onSave={() => setSaved((s) => !s)} />
+      <DetailHero p={p} saved={saved} onSave={() => setSaved((s) => !s)} onShare={onShare} shared={shared} onOpenGallery={(i) => setGalleryOpen(i)} />
       <FloatingSummary p={p} />
 
       <div className="mx-auto grid max-w-[1400px] gap-16 px-6 py-24 lg:grid-cols-[1fr_380px] lg:gap-20 lg:px-10">
@@ -60,19 +80,17 @@ function PropertyDetail() {
           <Overview p={p} />
           <Highlights p={p} />
           <Amenities p={p} />
-          <FloorPlan />
+          <FloorPlan p={p} />
           <VirtualTour p={p} />
           <MapSection p={p} />
           <Lifestyle p={p} />
-          <MortgageCalculator price={p.price} />
           <AgentSection p={p} />
-          <FAQ />
         </main>
         <StickyBooking p={p} />
       </div>
 
       <SimilarSection items={similar} />
-      <FinalCTA />
+      <FinalCTA p={p} />
       <Footer />
 
       <AnimatePresence>
@@ -93,20 +111,34 @@ function PropertyDetail() {
 
 /* -------------------- Hero -------------------- */
 
-function DetailHero({ p, onOpenGallery, saved, onSave }: { p: Property; onOpenGallery: (i: number) => void; saved: boolean; onSave: () => void }) {
+function DetailHero({ p, onOpenGallery, saved, onSave, onShare, shared }: {
+  p: Property;
+  onOpenGallery: (i: number) => void;
+  saved: boolean;
+  onSave: () => void;
+  onShare: () => void;
+  shared: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "18%"]);
 
+  const stats: [string, string | number][] = [
+    ["Beds", p.beds],
+    ["Baths", p.baths],
+    ["Area", `${p.area} m²`],
+    ["Type", p.category],
+  ];
+
   return (
-    <section ref={ref} className="relative min-h-[95svh] w-full overflow-hidden bg-ink text-primary-foreground">
+    <section ref={ref} className="relative min-h-[96svh] w-full overflow-hidden bg-ink text-primary-foreground">
       <motion.div style={{ y }} className="absolute inset-0">
         <img src={p.images[0]} alt={p.title} className="h-full w-full object-cover animate-hl-zoom" />
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/20" />
         <div className="absolute inset-0 bg-gradient-to-b from-ink/40 via-transparent to-transparent" />
       </motion.div>
 
-      <div className="relative z-10 mx-auto grid min-h-[95svh] max-w-[1400px] grid-cols-1 gap-8 px-6 pb-24 pt-32 lg:grid-cols-12 lg:px-10 lg:pb-32 lg:pt-36">
+      <div className="relative z-10 mx-auto grid min-h-[96svh] max-w-[1400px] grid-cols-1 gap-8 px-6 pb-24 pt-32 lg:grid-cols-12 lg:px-10 lg:pb-32 lg:pt-36">
         <motion.nav initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease, delay: 0.2 }}
           className="lg:col-span-12 flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-primary-foreground/60">
           <Link to="/" className="hover:text-primary-foreground">Home</Link>
@@ -132,7 +164,16 @@ function DetailHero({ p, onOpenGallery, saved, onSave }: { p: Property; onOpenGa
             <span className="text-sm">{p.location}</span>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease, delay: 0.7 }} className="mt-10 flex flex-wrap items-center gap-3">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease, delay: 0.6 }} className="mt-8 flex flex-wrap gap-x-8 gap-y-2 text-sm text-primary-foreground/80">
+            {stats.map(([k, v]) => (
+              <div key={k} className="flex items-center gap-2">
+                <span className="text-primary-foreground/50">{k}</span>
+                <span className="font-medium">{v}</span>
+              </div>
+            ))}
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease, delay: 0.75 }} className="mt-10 flex flex-wrap items-center gap-3">
             <button className="group inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3 text-[13px] font-medium text-ink transition-transform hover:scale-[1.03]">
               Book a viewing
               <svg className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.5" fill="none"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
@@ -140,6 +181,10 @@ function DetailHero({ p, onOpenGallery, saved, onSave }: { p: Property; onOpenGa
             <button onClick={onSave} className={`inline-flex items-center gap-2 rounded-full border px-6 py-3 text-[13px] font-medium backdrop-blur transition-all ${saved ? "border-gold bg-gold/20 text-gold" : "border-primary-foreground/30 bg-ink/30 text-primary-foreground hover:border-primary-foreground"}`}>
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.6"><path d="M12 21s-7-4.35-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.65-9.5 9-9.5 9z" /></svg>
               {saved ? "Saved" : "Save property"}
+            </button>
+            <button onClick={onShare} className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/30 bg-ink/30 px-6 py-3 text-[13px] font-medium text-primary-foreground backdrop-blur transition-all hover:border-primary-foreground">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" /></svg>
+              {shared ? "Link copied" : "Share"}
             </button>
             <button onClick={() => onOpenGallery(0)} className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/30 bg-ink/30 px-5 py-3 text-[13px] font-medium text-primary-foreground backdrop-blur transition-all hover:border-primary-foreground">
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="11" r="2" /><path d="M21 17l-6-6-8 8" /></svg>
@@ -159,10 +204,6 @@ function DetailHero({ p, onOpenGallery, saved, onSave }: { p: Property; onOpenGa
               <div><div className="font-medium">{p.area}</div><div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">Sqm</div></div>
             </div>
             <button className="mt-5 w-full rounded-full bg-ink py-3 text-sm font-medium text-primary-foreground transition-all hover:bg-gold hover:text-ink">Book viewing</button>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <button className="rounded-full border border-ink/15 py-2.5 text-[12px] font-medium hover:bg-ink/5">Save</button>
-              <button className="rounded-full border border-ink/15 py-2.5 text-[12px] font-medium hover:bg-ink/5">Share</button>
-            </div>
           </motion.div>
         </div>
       </div>
@@ -178,7 +219,7 @@ function FloatingSummary({ p }: { p: Property }) {
     ["Type", p.category],
     ["Availability", p.status],
     ["Year built", `${p.yearBuilt}`],
-    ["Lot size", `${Math.round(p.area * 1.6)} m²`],
+    ["Lot size", `${p.lotSize} m²`],
     ["Parking", `${p.parking} spaces`],
     ["Energy", p.energy],
     ["Reference", ref],
@@ -210,7 +251,7 @@ function SectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
 }
 
 function EditorialGallery({ p, onOpen }: { p: Property; onOpen: (i: number) => void }) {
-  const imgs = p.images.concat(p.images).slice(0, 5);
+  const imgs = p.images.slice(0, 5);
   return (
     <section>
       <SectionHeader eyebrow="Gallery" title="Step inside." />
@@ -229,8 +270,8 @@ function EditorialGallery({ p, onOpen }: { p: Property; onOpen: (i: number) => v
       </div>
       {/* Mobile swipeable */}
       <div className="mt-8 -mx-6 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-2 md:hidden">
-        {imgs.map((src, i) => (
-          <button key={i} onClick={() => onOpen(i % p.images.length)} className="relative aspect-[4/5] w-[78%] shrink-0 snap-center overflow-hidden rounded-2xl bg-ink/5">
+        {p.images.map((src, i) => (
+          <button key={i} onClick={() => onOpen(i)} className="relative aspect-[4/5] w-[78%] shrink-0 snap-center overflow-hidden rounded-2xl bg-ink/5">
             <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
           </button>
         ))}
@@ -245,10 +286,11 @@ function EditorialGallery({ p, onOpen }: { p: Property; onOpen: (i: number) => v
 
 function Overview({ p }: { p: Property }) {
   const paras: [string, string][] = [
-    ["Architecture", p.description],
-    ["Interior design", `Inside, ${p.title.split(" ")[0]} unfolds in a slow procession of rooms — hand-troweled plaster meets brushed oak underfoot, and honed travertine framing marks each threshold. A restrained material palette lets the light and the landscape do the talking.`],
-    ["Natural lighting", `Full-height glazing follows the sun through the day, from the still morning light of the eastern courtyard to the amber wash across the western terraces. Every principal room enjoys at least two light exposures.`],
-    ["Outdoor living", `Terraces, gardens and a heated infinity pool extend the living plan into the open air — a private stage for long lunches, quiet evenings and the occasional dinner for twenty under the olive trees.`],
+    ["The property", p.description],
+    ["Architectural style", `${p.architecturalStyle}. The plan follows the natural fall of the land, anchoring principal rooms to the view while keeping service spaces quietly to the rear.`],
+    ["Interior finish", `${p.interiorFinish}. Every threshold is marked in honed stone, and the joinery runs full height to draw the eye outward toward the landscape.`],
+    ["Natural light", `Full-height glazing tracks the sun from the still eastern light of the morning courtyard to the amber wash across the western terraces at dusk. Every principal room enjoys at least two exposures.`],
+    ["Outdoor living", `Terraces, gardens and a heated infinity pool extend the living plan into the open air — a private stage for long lunches, quiet evenings and the occasional dinner for twenty.`],
   ];
   return (
     <section>
@@ -279,11 +321,11 @@ function Highlights({ p }: { p: Property }) {
   const items: [string, string][] = [
     ["Bedrooms", `${p.beds}`],
     ["Bathrooms", `${p.baths}`],
-    ["Floor area", `${p.area} m²`],
-    ["Land size", `${Math.round(p.area * 1.6)} m²`],
+    ["Living space", `${p.livingSpace} m²`],
+    ["Lot size", `${p.lotSize} m²`],
     ["Parking", `${p.parking} cars`],
     ["Year built", `${p.yearBuilt}`],
-    ["Energy", p.energy],
+    ["Energy rating", p.energy],
     ["Reference", `HL-${p.id.slice(0, 4).toUpperCase()}`],
   ];
   return (
@@ -318,7 +360,9 @@ function Amenities({ p }: { p: Property }) {
   );
 }
 
-function FloorPlan() {
+function FloorPlan({ p }: { p: Property }) {
+  // Auto-hide when no floor plan is available for this property
+  if (!p.floorPlan) return null;
   return (
     <section>
       <SectionHeader eyebrow="Floor plan" title="Understand the flow." />
@@ -348,6 +392,8 @@ function FloorPlan() {
 }
 
 function VirtualTour({ p }: { p: Property }) {
+  // Auto-hide when no virtual tour is available
+  if (!p.virtualTour) return null;
   return (
     <section>
       <SectionHeader eyebrow="Virtual tour" title="Wander through." />
@@ -394,20 +440,15 @@ function MapSection({ p }: { p: Property }) {
 }
 
 function Lifestyle({ p }: { p: Property }) {
-  const cards = [
-    { title: "The neighborhood", body: "Cobbled walking streets, morning light on stone facades, and cafés that have belonged to the same families for generations.", img: p.images[2] },
-    { title: "Schools & learning", body: "Three internationally accredited schools within a fifteen-minute drive, plus a beloved public library.", img: p.images[0] },
-    { title: "Everyday commute", body: "Twelve minutes to the coastal expressway, twenty-two minutes to the international terminal by high-speed rail.", img: p.images[1] },
-  ];
   return (
     <section>
       <SectionHeader eyebrow="Lifestyle" title="A day in the neighborhood." />
       <div className="mt-10 grid gap-6 md:grid-cols-3">
-        {cards.map((c, i) => (
+        {p.lifestyle.map((c, i) => (
           <motion.article key={c.title}
             initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.7, ease, delay: i * 0.1 }}
-            className="group overflow-hidden rounded-3xl bg-canvas">
+            className={`group overflow-hidden rounded-3xl bg-canvas ${i % 2 === 1 ? "md:mt-12" : ""}`}>
             <div className="aspect-[4/5] overflow-hidden">
               <img src={c.img} alt="" className="h-full w-full object-cover transition-transform duration-[1500ms] group-hover:scale-105" />
             </div>
@@ -422,80 +463,35 @@ function Lifestyle({ p }: { p: Property }) {
   );
 }
 
-function MortgageCalculator({ price }: { price: number }) {
-  const [deposit, setDeposit] = useState(Math.round(price * 0.2));
-  const [rate, setRate] = useState(4.2);
-  const [years, setYears] = useState(25);
-  const loan = Math.max(0, price - deposit);
-  const monthly = useMemo(() => {
-    const r = rate / 100 / 12;
-    const n = years * 12;
-    if (r === 0) return loan / n;
-    return (loan * r) / (1 - Math.pow(1 + r, -n));
-  }, [loan, rate, years]);
-
-  return (
-    <section>
-      <SectionHeader eyebrow="Financing" title="Estimate your monthly payment." />
-      <div className="mt-10 grid gap-6 rounded-3xl border border-ink/10 bg-canvas p-8 md:grid-cols-2 md:p-10">
-        <div className="space-y-6">
-          <Field label="Deposit" value={`€${deposit.toLocaleString()}`}>
-            <input type="range" min={0} max={price} step={10000} value={deposit} onChange={(e) => setDeposit(+e.target.value)} className="w-full accent-[color:var(--gold)]" />
-          </Field>
-          <Field label="Interest rate" value={`${rate.toFixed(2)}%`}>
-            <input type="range" min={1} max={9} step={0.1} value={rate} onChange={(e) => setRate(+e.target.value)} className="w-full accent-[color:var(--gold)]" />
-          </Field>
-          <Field label="Loan term" value={`${years} years`}>
-            <input type="range" min={5} max={35} step={1} value={years} onChange={(e) => setYears(+e.target.value)} className="w-full accent-[color:var(--gold)]" />
-          </Field>
-        </div>
-        <div className="flex flex-col justify-center rounded-2xl bg-ink p-8 text-primary-foreground">
-          <div className="text-eyebrow text-primary-foreground/60">Estimated monthly</div>
-          <motion.div key={Math.round(monthly)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mt-3 font-display text-5xl font-medium tracking-tight md:text-6xl">
-            €{Math.round(monthly).toLocaleString()}
-          </motion.div>
-          <div className="mt-4 text-xs text-primary-foreground/60">Loan €{loan.toLocaleString()} · {years} years · {rate.toFixed(2)}%</div>
-          <button className="mt-8 self-start rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-ink hover:scale-105 transition-transform">Speak to a broker</button>
-        </div>
-      </div>
-    </section>
-  );
-}
-function Field({ label, value, children }: { label: string; value: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="flex items-baseline justify-between">
-        <div className="text-[11px] uppercase tracking-[0.24em] text-ink/50">{label}</div>
-        <div className="text-sm font-medium">{value}</div>
-      </div>
-      <div className="mt-3">{children}</div>
-    </div>
-  );
-}
-
 function AgentSection({ p }: { p: Property }) {
+  const a = p.agent;
   return (
     <section>
       <SectionHeader eyebrow="Your agent" title="Speak with someone who knows the street." />
       <div className="mt-10 grid gap-8 rounded-3xl bg-canvas md:grid-cols-[280px_1fr]">
         <div className="group relative aspect-[4/5] overflow-hidden rounded-3xl">
-          <img src={p.agent.avatar} alt={p.agent.name} className="h-full w-full object-cover transition-transform duration-[1400ms] group-hover:scale-105" />
+          <img src={a.avatar} alt={a.name} className="h-full w-full object-cover transition-transform duration-[1400ms] group-hover:scale-105" />
         </div>
         <div className="flex flex-col justify-center">
-          <div className="font-display text-3xl font-medium">{p.agent.name}</div>
-          <div className="mt-1 text-sm text-ink/60">{p.agent.role}</div>
+          <div className="font-display text-3xl font-medium">{a.name}</div>
+          <div className="mt-1 text-sm text-ink/60">{a.role}</div>
           <p className="mt-6 max-w-lg text-sm leading-relaxed text-ink/70">
-            {p.agent.name.split(" ")[0]} has helped over {p.agent.sold} families place roots in {p.location.split(",")[0]}. Fluent in the quiet cadence of private sales, sensitive to the small details that make a house feel like home.
+            {a.name.split(" ")[0]} has helped over {a.sold} families place roots in {p.location.split(",")[0]}. Fluent in the quiet cadence of private sales, sensitive to the small details that make a house feel like home.
           </p>
-          <div className="mt-6 flex gap-6 border-y border-ink/10 py-4">
-            <Stat k="Sold" v={`${p.agent.sold}+`} />
-            <Stat k="Years" v={`${p.agent.years}`} />
-            <Stat k="Response" v="< 1 hr" />
+          <div className="mt-6 flex flex-wrap gap-6 border-y border-ink/10 py-4">
+            <Stat k="Sold" v={`${a.sold}+`} />
+            <Stat k="Years" v={`${a.years}`} />
+            <Stat k="Response" v={a.responseTime} />
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {a.languages.map((l) => (
+              <span key={l} className="rounded-full border border-ink/15 px-3 py-1 text-xs text-ink/70">{l}</span>
+            ))}
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            <button className="rounded-full bg-ink px-5 py-2.5 text-sm text-primary-foreground hover:bg-gold hover:text-ink transition-all">Schedule meeting</button>
-            <button className="rounded-full border border-ink/15 px-5 py-2.5 text-sm hover:bg-ink/5">Message</button>
-            <a href={`tel:${p.agent.phone}`} className="rounded-full border border-ink/15 px-5 py-2.5 text-sm hover:bg-ink/5">{p.agent.phone}</a>
+            <button className="rounded-full bg-ink px-5 py-2.5 text-sm text-primary-foreground hover:bg-gold hover:text-ink transition-all">Book viewing</button>
+            <a href={`mailto:${a.email}`} className="rounded-full border border-ink/15 px-5 py-2.5 text-sm hover:bg-ink/5">{a.email}</a>
+            <a href={`tel:${a.phone}`} className="rounded-full border border-ink/15 px-5 py-2.5 text-sm hover:bg-ink/5">{a.phone}</a>
           </div>
         </div>
       </div>
@@ -506,64 +502,54 @@ function Stat({ k, v }: { k: string; v: string }) {
   return <div><div className="font-display text-2xl font-medium">{v}</div><div className="text-[11px] uppercase tracking-[0.2em] text-ink/50">{k}</div></div>;
 }
 
-function FAQ() {
-  const items = [
-    ["Can I schedule a viewing?", "Yes — book directly from this page or through the agent panel. In-person and private virtual viewings are both available, seven days a week."],
-    ["Can I make an offer?", "Absolutely. Our agents will guide you through the offer letter, deposit structure and legal timeline, tailored to your jurisdiction."],
-    ["Are pets allowed?", "Most residences welcome pets. Individual buildings may have their own guidelines — your agent will confirm before you sign."],
-    ["How is financing handled?", "We partner with private banks across Europe. From soft eligibility to notarial completion, everything is coordinated in one thread."],
-  ];
-  const [open, setOpen] = useState<number | null>(0);
-  return (
-    <section>
-      <SectionHeader eyebrow="FAQ" title="Answered honestly." />
-      <div className="mt-10 divide-y divide-ink/10 border-y border-ink/10">
-        {items.map(([q, a], i) => (
-          <div key={q}>
-            <button onClick={() => setOpen(open === i ? null : i)} className="flex w-full items-center justify-between gap-6 py-6 text-left">
-              <span className="font-display text-lg md:text-xl">{q}</span>
-              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border border-ink/15 transition-transform ${open === i ? "rotate-45 bg-ink text-primary-foreground" : ""}`}>
-                <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.5"><path d="M8 3v10M3 8h10" /></svg>
-              </span>
-            </button>
-            <AnimatePresence initial={false}>
-              {open === i && (
-                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.4, ease }} className="overflow-hidden">
-                  <p className="pb-6 pr-16 text-sm leading-relaxed text-ink/70">{a}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 /* -------------------- Sticky booking rail -------------------- */
 
 function StickyBooking({ p }: { p: Property }) {
+  const a = p.agent;
+  const monthly = Math.round((p.price * 0.8 * (0.042 / 12)) / (1 - Math.pow(1 + 0.042 / 12, -300)));
   return (
     <aside className="hidden lg:block">
       <div className="sticky top-24 space-y-4">
         <div className="rounded-3xl border border-ink/10 bg-canvas p-6 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.25)]">
-          <div className="flex items-center gap-3">
-            <img src={p.agent.avatar} alt={p.agent.name} className="h-12 w-12 rounded-full object-cover" />
-            <div className="min-w-0">
-              <div className="truncate text-sm font-medium">{p.agent.name}</div>
-              <div className="truncate text-xs text-ink/50">{p.agent.role}</div>
-            </div>
+          <div className="text-eyebrow">{p.status}</div>
+          <div className="mt-2 font-display text-3xl font-medium">{formatPrice(p.price)}</div>
+          <div className="mt-4 grid grid-cols-3 gap-2 border-t border-ink/10 pt-4 text-center text-sm">
+            <div><div className="font-medium">{p.beds}</div><div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">Beds</div></div>
+            <div className="border-x border-ink/10"><div className="font-medium">{p.baths}</div><div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">Baths</div></div>
+            <div><div className="font-medium">{p.area}</div><div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">Sqm</div></div>
           </div>
           <div className="mt-5 space-y-2">
             <button className="w-full rounded-full bg-ink py-3 text-sm font-medium text-primary-foreground hover:bg-gold hover:text-ink transition-all">Book viewing</button>
             <button className="w-full rounded-full border border-ink/15 py-3 text-sm hover:bg-ink/5">Schedule tour</button>
-            <button className="w-full rounded-full border border-ink/15 py-3 text-sm hover:bg-ink/5">Message agent</button>
-            <a href={`tel:${p.agent.phone}`} className="block w-full rounded-full border border-ink/15 py-3 text-center text-sm hover:bg-ink/5">{p.agent.phone}</a>
+            <button className="w-full rounded-full border border-ink/15 py-3 text-sm hover:bg-ink/5">Request information</button>
+          </div>
+        </div>
+        <div className="rounded-3xl border border-ink/10 bg-canvas p-6 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.25)]">
+          <div className="flex items-center gap-3">
+            <img src={a.avatar} alt={a.name} className="h-12 w-12 rounded-full object-cover" />
+            <div className="min-w-0">
+              <div className="truncate text-sm font-medium">{a.name}</div>
+              <div className="truncate text-xs text-ink/50">{a.role}</div>
+            </div>
+          </div>
+          <div className="mt-4 space-y-2 text-sm">
+            <div className="flex items-center gap-2 text-ink/70">
+              <svg className="h-3.5 w-3.5 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+              Replies {a.responseTime}
+            </div>
+            <a href={`tel:${a.phone}`} className="flex items-center gap-2 text-ink/70 hover:text-ink">
+              <svg className="h-3.5 w-3.5 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2z" /></svg>
+              {a.phone}
+            </a>
+            <a href={`mailto:${a.email}`} className="flex items-center gap-2 text-ink/70 hover:text-ink">
+              <svg className="h-3.5 w-3.5 text-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></svg>
+              {a.email}
+            </a>
           </div>
         </div>
         <div className="rounded-3xl border border-ink/10 bg-ink p-6 text-primary-foreground">
           <div className="text-eyebrow text-primary-foreground/60">Estimate</div>
-          <div className="mt-2 font-display text-2xl font-medium">€{Math.round((p.price * 0.8 * (0.042 / 12)) / (1 - Math.pow(1 + 0.042 / 12, -300))).toLocaleString()}/mo</div>
+          <div className="mt-2 font-display text-2xl font-medium">€{monthly.toLocaleString()}/mo</div>
           <div className="mt-1 text-xs text-primary-foreground/60">25y · 4.2% · 20% down</div>
           <button className="mt-4 text-xs text-gold underline underline-offset-4">Adjust calculator</button>
         </div>
@@ -575,30 +561,14 @@ function StickyBooking({ p }: { p: Property }) {
 /* -------------------- Similar + CTA -------------------- */
 
 function SimilarSection({ items }: { items: Property[] }) {
+  if (items.length === 0) return null;
   return (
     <section className="border-t border-ink/10 bg-canvas py-24">
       <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
         <SectionHeader eyebrow="You might also love" title="Handpicked next steps." />
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+        <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((p, i) => (
-            <motion.div key={p.id}
-              initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.7, ease, delay: i * 0.1 }}
-              className="group">
-              <Link to="/properties/$id" params={{ id: p.id }} className="block">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-3xl">
-                  <img src={p.images[0]} alt={p.title} className="h-full w-full object-cover transition-transform duration-[1500ms] group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-ink/60 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-5 text-primary-foreground">
-                    <div className="text-[11px] uppercase tracking-[0.2em] opacity-70">{p.location}</div>
-                    <div className="mt-1 flex items-end justify-between">
-                      <div className="font-display text-2xl">{p.title}</div>
-                      <div className="font-display text-lg">{formatPrice(p.price)}</div>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
+            <PropertyCard key={p.id} p={p} index={i} />
           ))}
         </div>
       </div>
@@ -606,7 +576,7 @@ function SimilarSection({ items }: { items: Property[] }) {
   );
 }
 
-function FinalCTA() {
+function FinalCTA({ p }: { p: Property }) {
   return (
     <section className="relative overflow-hidden bg-ink py-28 text-primary-foreground">
       <img src={ctaBg} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40" />
@@ -618,12 +588,12 @@ function FinalCTA() {
         </motion.h2>
         <motion.p initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.9, ease, delay: 0.15 }}
           className="relative mx-auto mt-6 max-w-xl text-[15px] leading-relaxed text-primary-foreground/70">
-          Schedule a private viewing at your pace. Our agents host in-person and virtual tours, seven days a week.
+          Schedule a private viewing of {p.title} at your pace. Our agents host in-person and virtual tours, seven days a week.
         </motion.p>
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.9, ease, delay: 0.25 }}
           className="relative mt-10 flex flex-wrap items-center justify-center gap-3">
           <button className="rounded-full bg-gold px-6 py-3 text-sm font-medium text-ink hover:scale-105 transition-transform">Book viewing</button>
-          <button className="rounded-full border border-primary-foreground/25 px-6 py-3 text-sm font-medium hover:bg-primary-foreground hover:text-ink transition-all">Contact agent</button>
+          <a href={`mailto:${p.agent.email}`} className="rounded-full border border-primary-foreground/25 px-6 py-3 text-sm font-medium hover:bg-primary-foreground hover:text-ink transition-all">Contact agent</a>
         </motion.div>
       </div>
     </section>
