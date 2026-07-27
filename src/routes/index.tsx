@@ -342,10 +342,10 @@ function SearchModule() {
             <div className="mt-1.5 text-sm font-medium text-ink">{f.value}</div>
           </div>
         ))}
-        <button className="group flex items-center justify-center gap-2 bg-ink px-4 py-4 text-sm font-medium text-primary-foreground transition-all duration-500 hover:bg-gold hover:text-ink md:px-6">
+        <Link to="/properties" className="group flex items-center justify-center gap-2 bg-ink px-4 py-4 text-sm font-medium text-primary-foreground transition-all duration-500 hover:bg-gold hover:text-ink md:px-6">
           <span>Search</span>
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-        </button>
+        </Link>
       </div>
     </motion.div>
   );
