@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useRef, useState } from "react";
 import { formatPrice, type Property } from "@/lib/properties";
@@ -36,13 +35,14 @@ export function PropertyCard({ p, index = 0, onQuickView, className = "" }: Prop
       transition={{ duration: 0.7, ease, delay: (index % 3) * 0.08 }}
       className={className}
     >
-      <Link
-        to="/properties/$id"
-        params={{ id: p.id }}
+      <div
+        onClick={() => onQuickView?.(p)}
         onMouseEnter={onEnter}
         onMouseLeave={onLeave}
         className="group relative flex aspect-[4/5] cursor-pointer flex-col overflow-hidden rounded-3xl bg-ink text-primary-foreground transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_40px_80px_-30px_rgba(0,0,0,0.35)]"
-        aria-label={`View ${p.title}`}
+        role="button"
+        tabIndex={0}
+        aria-label={`Preview ${p.title}`}
       >
         <div className="absolute inset-0">
           {p.images.map((src, i) => (
@@ -121,7 +121,7 @@ export function PropertyCard({ p, index = 0, onQuickView, className = "" }: Prop
         <div className="pointer-events-none absolute right-6 top-20 z-10 grid h-10 w-10 place-items-center rounded-full bg-gold text-ink opacity-0 translate-x-2 transition-all duration-500 group-hover:opacity-100 group-hover:translate-x-0">
           <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
         </div>
-      </Link>
+      </div>
     </motion.div>
   );
 }

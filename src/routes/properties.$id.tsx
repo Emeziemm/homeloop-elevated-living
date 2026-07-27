@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion"
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SiteNav } from "@/components/site-nav";
 import { PropertyCard } from "@/components/property-card";
+import { QuickViewModal } from "@/components/quick-view-modal";
 import { findProperty, formatPrice, properties, type Property } from "@/lib/properties";
 import ctaBg from "@/assets/cta-bg.jpg";
 
@@ -43,6 +44,7 @@ function PropertyDetail() {
   const [galleryOpen, setGalleryOpen] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
+  const [quickView, setQuickView] = useState<Property | null>(null);
 
   const similar = useMemo(
     () => properties.filter((x) => x.id !== p.id && x.category === p.category).slice(0, 3),
@@ -89,10 +91,11 @@ function PropertyDetail() {
         <StickyBooking p={p} />
       </div>
 
-      <SimilarSection items={similar} />
+      <SimilarSection items={similar} onQuickView={setQuickView} />
       <FinalCTA p={p} />
       <Footer />
 
+      <QuickViewModal property={quickView} onClose={() => setQuickView(null)} />
       <AnimatePresence>
         {galleryOpen !== null && <FullscreenGallery images={p.images} start={galleryOpen} onClose={() => setGalleryOpen(null)} />}
       </AnimatePresence>
@@ -560,15 +563,33 @@ function StickyBooking({ p }: { p: Property }) {
 
 /* -------------------- Similar + CTA -------------------- */
 
-function SimilarSection({ items }: { items: Property[] }) {
+function SimilarSection({ items, onQuickView }: { items: Property[]; onQuickView: (p: Property) => void }) {
+  const scroller = useRef<HTMLDivElement>(null);
   if (items.length === 0) return null;
+  const scrollBy = (dir: number) => {
+    const el = scroller.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.8, 420), behavior: "smooth" });
+  };
   return (
     <section className="border-t border-ink/10 bg-canvas py-24">
       <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
-        <SectionHeader eyebrow="You might also love" title="Handpicked next steps." />
-        <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex items-end justify-between gap-8">
+          <SectionHeader eyebrow="You might also love" title="Handpicked next steps." />
+          <div className="hidden gap-2 md:flex">
+            <button onClick={() => scrollBy(-1)} className="grid h-11 w-11 place-items-center rounded-full border border-ink/15 transition-all hover:border-gold hover:bg-ink hover:text-primary-foreground" aria-label="Previous">
+              <svg className="h-4 w-4" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.5" fill="none"><path d="M10 3L5 8l5 5" /></svg>
+            </button>
+            <button onClick={() => scrollBy(1)} className="grid h-11 w-11 place-items-center rounded-full border border-ink/15 transition-all hover:border-gold hover:bg-ink hover:text-primary-foreground" aria-label="Next">
+              <svg className="h-4 w-4" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.5" fill="none"><path d="M6 3l5 5-5 5" /></svg>
+            </button>
+          </div>
+        </div>
+        <div ref={scroller} className="mt-12 -mx-6 flex snap-x snap-mandatory gap-6 overflow-x-auto px-6 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-10 lg:px-10">
           {items.map((p, i) => (
-            <PropertyCard key={p.id} p={p} index={i} />
+            <div key={p.id} className="w-[78vw] shrink-0 snap-start sm:w-[360px] lg:w-[400px]">
+              <PropertyCard p={p} index={i} onQuickView={onQuickView} />
+            </div>
           ))}
         </div>
       </div>

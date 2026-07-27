@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, useSpring, useMotionValue, AnimatePresence } from "framer-motion";
+import { QuickViewModal } from "@/components/quick-view-modal";
+import { properties, type Property } from "@/lib/properties";
 import heroVilla from "@/assets/hero-villa.jpg";
 import property1 from "@/assets/property-1.jpg";
-import property2 from "@/assets/property-2.jpg";
 import property3 from "@/assets/property-3.jpg";
 import area1 from "@/assets/area-1.jpg";
 import area2 from "@/assets/area-2.jpg";
@@ -376,12 +377,18 @@ function LogoStrip() {
 /* -------------------- Featured properties -------------------- */
 
 function FeaturedProperties() {
-  const items = [
-    { image: property2, title: "The Ridge Residence", price: "$6.4M", loc: "Malibu, CA", beds: "5 bed · 6 bath · 8,200 sqft", size: "large" as const },
-    { image: property1, title: "Palm House", price: "$3.8M", loc: "Beverly Hills, CA", beds: "4 bed · 4 bath", size: "portrait" as const },
-    { image: property3, title: "The Skyline Loft", price: "$2.1M", loc: "Downtown LA", beds: "2 bed · 2 bath", size: "portrait" as const },
-  ];
+  const [quickView, setQuickView] = useState<Property | null>(null);
+  const items = properties.slice(0, 3).map((p) => ({
+    p,
+    image: p.images[0],
+    title: p.title,
+    price: `${(p.price / 1_000_000).toFixed(1)}M`,
+    loc: p.location,
+    beds: `${p.beds} bed · ${p.baths} bath · ${p.area} sqm`,
+    size: (p.span === "lg" || p.span === "wide" ? "large" : "portrait") as "large" | "portrait",
+  }));
   return (
+    <>
     <section id="properties" className="bg-canvas py-28 lg:py-40">
       <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
         <div className="flex flex-col justify-between gap-8 md:flex-row md:items-end">
@@ -397,9 +404,9 @@ function FeaturedProperties() {
         </div>
 
         <div className="mt-16 grid grid-cols-12 gap-6 lg:gap-8">
-          <PropertyCard {...items[0]} className="col-span-12 md:col-span-8" />
-          <PropertyCard {...items[1]} className="col-span-12 md:col-span-4" />
-          <PropertyCard {...items[2]} className="col-span-12 md:col-span-5" />
+          <PropertyCard {...items[0]} className="col-span-12 md:col-span-8" onQuickView={setQuickView} />
+          <PropertyCard {...items[1]} className="col-span-12 md:col-span-4" onQuickView={setQuickView} />
+          <PropertyCard {...items[2]} className="col-span-12 md:col-span-5" onQuickView={setQuickView} />
           <div className="col-span-12 flex flex-col justify-between md:col-span-7">
             <div className="rounded-2xl border border-ink/10 p-8 lg:p-12">
               <Eyebrow>Property Experience</Eyebrow>
@@ -419,6 +426,8 @@ function FeaturedProperties() {
         </div>
       </div>
     </section>
+    <QuickViewModal property={quickView} onClose={() => setQuickView(null)} />
+    </>
   );
 }
 
@@ -430,6 +439,7 @@ function PropertyCard({
   beds,
   size,
   className = "",
+  onQuickView,
 }: {
   image: string;
   title: string;
@@ -438,7 +448,9 @@ function PropertyCard({
   beds: string;
   size: "large" | "portrait";
   className?: string;
+  onQuickView?: (p: Property) => void;
 }) {
+  const p = properties.find((x) => x.title === title);
   return (
     <motion.article
       initial={{ opacity: 0, y: 40 }}
@@ -446,6 +458,9 @@ function PropertyCard({
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.9, ease }}
       className={`group relative overflow-hidden rounded-2xl bg-ink ${className}`}
+      onClick={() => p && onQuickView?.(p)}
+      role="button"
+      tabIndex={0}
     >
       <div className={`relative overflow-hidden ${size === "large" ? "aspect-[16/10]" : "aspect-[4/5]"}`}>
         <img
