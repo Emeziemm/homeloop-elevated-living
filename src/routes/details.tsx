@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
 import { SiteNav } from "@/components/site-nav";
 import { PropertyCard } from "@/components/property-card";
@@ -11,8 +11,6 @@ import property1 from "@/assets/property-1.jpg";
 import property2 from "@/assets/property-2.jpg";
 import property3 from "@/assets/property-3.jpg";
 import area1 from "@/assets/area-1.jpg";
-import area2 from "@/assets/area-2.jpg";
-import area3 from "@/assets/area-3.jpg";
 import agent2 from "@/assets/agent-2.jpg";
 import ctaBg from "@/assets/cta-bg.jpg";
 
@@ -263,7 +261,7 @@ function SpecCards() {
 
 function FeatureIcon({ name }: { name: string }) {
   const common = "h-6 w-6";
-  const paths: Record<string, React.ReactNode> = {
+  const paths: Record<string, ReactNode> = {
     pool: <><path d="M2 18c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2" /><path d="M6 14V5a2 2 0 0 1 4 0" /></>,
     cinema: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M10 9l5 3-5 3z" /></>,
     sea: <><path d="M12 3c-3 5-6 7-6 11a6 6 0 0 0 12 0c0-4-3-6-6-11z" /></>,
@@ -343,7 +341,7 @@ function Lifestyle() {
 /* -------------------- Location -------------------- */
 
 function NearbyIcon({ name }: { name: string }) {
-  const paths: Record<string, React.ReactNode> = {
+  const paths: Record<string, ReactNode> = {
     dining: <><path d="M6 2v8a3 3 0 0 0 6 0V2M9 2v20" /><path d="M18 2c-2 0-3 3-3 6s1 4 3 4v10" /></>,
     marina: <><path d="M2 20h20M4 20V8l5-3 5 3 6-3v12" /><path d="M12 5v15" /></>,
     school: <><path d="M12 4l9 4-9 4-9-4 9-4z" /><path d="M7 10v5c0 1 2 3 5 3s5-2 5-3v-5" /></>,
