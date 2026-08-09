@@ -1,6 +1,6 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform, useSpring, useMotionValue, AnimatePresence } from "framer-motion";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useRef, useState, type ReactNode, type MouseEvent } from "react";
+import { motion, useScroll, useTransform, useSpring, useMotionValue } from "framer-motion";
 import { QuickViewModal } from "@/components/quick-view-modal";
 import { properties, type Property } from "@/lib/properties";
 import heroVilla from "@/assets/hero-villa.jpg";
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/")({
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
-function Eyebrow({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function Eyebrow({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div className={`text-eyebrow flex items-center gap-2 ${className}`}>
       <span className="inline-block h-px w-6 bg-current opacity-40" />
@@ -41,7 +41,7 @@ function Eyebrow({ children, className = "" }: { children: React.ReactNode; clas
   );
 }
 
-function GoldButton({ children, variant = "solid" }: { children: React.ReactNode; variant?: "solid" | "ghost" }) {
+function GoldButton({ children, variant = "solid" }: { children: ReactNode; variant?: "solid" | "ghost" }) {
   if (variant === "ghost") {
     return (
       <button className="group inline-flex items-center gap-2 text-sm font-medium tracking-tight text-ink">
@@ -134,7 +134,7 @@ function Hero() {
   const sx = useSpring(mx, { stiffness: 60, damping: 20 });
   const sy = useSpring(my, { stiffness: 60, damping: 20 });
 
-  const onMove = (e: React.MouseEvent) => {
+  const onMove = (e: MouseEvent) => {
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
     mx.set(((e.clientX - rect.left) / rect.width - 0.5) * 20);
     my.set(((e.clientY - rect.top) / rect.height - 0.5) * 20);
@@ -217,7 +217,16 @@ function Hero() {
               transition={{ duration: 0.9, ease, delay: 0.95 }}
               className="mt-8 flex flex-wrap items-center gap-6"
             >
-              <GoldButton>Book a viewing</GoldButton>
+              <Link
+                to="/properties"
+                className="group relative inline-flex items-center gap-3 overflow-hidden rounded-full bg-ink px-6 py-3 text-sm font-medium text-primary-foreground transition-all duration-500 hover:pl-7 hover:pr-8"
+              >
+                <span className="absolute inset-0 translate-y-full bg-gold transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-y-0" />
+                <span className="relative">Explore Properties</span>
+                <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-primary-foreground/10 transition-transform duration-500 group-hover:translate-x-1">
+                  <ArrowRight />
+                </span>
+              </Link>
               <button className="group inline-flex items-center gap-3 text-sm text-primary-foreground/80 transition-colors hover:text-primary-foreground">
                 <span className="flex h-9 w-9 items-center justify-center rounded-full border border-primary-foreground/25 transition-all group-hover:border-gold group-hover:bg-gold/10">
                   <svg className="h-3 w-3 fill-current" viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z" /></svg>
@@ -282,9 +291,8 @@ function Hero() {
           </motion.div>
         </div>
 
-        {/* Search module + stats */}
-        <div className="relative z-20 mt-16 space-y-8">
-          <SearchModule />
+        {/* Stats */}
+        <div className="relative z-20 mt-16">
           <div className="grid grid-cols-2 gap-8 border-t border-primary-foreground/10 pt-8 md:grid-cols-4">
             <Stat value="98%" label="Properties sold" delay={1.4} />
             <Stat value="<10 min" label="Avg response" delay={1.5} />
@@ -341,225 +349,6 @@ function Stat({ value, label, delay }: { value: string; label: string; delay: nu
     >
       <div className="font-display text-3xl font-medium tracking-tight md:text-4xl">{value}</div>
       <div className="mt-2 text-[11px] uppercase tracking-[0.2em] text-primary-foreground/50">{label}</div>
-    </motion.div>
-  );
-}
-
-const LOCATIONS = ["Los Angeles, CA", "New York, NY", "London, UK", "Paris, France", "Dubai, UAE", "Miami, FL"];
-const TYPES = ["All properties", "Apartment", "Villa", "Townhouse", "Penthouse", "Estate", "Commercial"];
-const BEDS = ["Any", "1+", "2+", "3+", "4+", "5+", "6+"];
-const PRICES: { label: string; value: number }[] = [
-  { label: "$500K", value: 500_000 },
-  { label: "$1M", value: 1_000_000 },
-  { label: "$2M", value: 2_000_000 },
-  { label: "$5M", value: 5_000_000 },
-  { label: "$10M+", value: 15_000_000 },
-];
-
-function priceLabel(v: number) {
-  return PRICES.find((p) => p.value === v)?.label ?? `$${(v / 1_000_000).toFixed(0)}M`;
-}
-
-function Popover({ children, align = "left" }: { children: React.ReactNode; align?: "left" | "right" }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 8 }}
-      transition={{ duration: 0.22, ease: "easeOut" }}
-      className={`absolute bottom-[calc(100%+10px)] z-50 max-h-[52vh] w-[min(20rem,calc(100vw-3rem))] overflow-y-auto rounded-[18px] border border-ink/10 bg-canvas p-4 text-ink shadow-[0_30px_80px_-24px_rgba(0,0,0,0.45)] ${align === "right" ? "right-0" : "left-0"}`}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-function OptionRow({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
-        active ? "bg-gold/15 font-medium text-ink" : "text-ink/70 hover:bg-ink/5 hover:text-ink"
-      }`}
-    >
-      {label}
-      {active && <span className="h-1.5 w-1.5 rounded-full bg-gold" />}
-    </button>
-  );
-}
-
-function Field({
-  label,
-  value,
-  open,
-  onToggle,
-  children,
-  align,
-  radius = "",
-}: {
-  label: string;
-  value: string;
-  open: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-  align?: "left" | "right";
-  radius?: string;
-}) {
-  return (
-    <div className={`relative bg-canvas ${radius}`}>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        className={`group flex w-full items-center justify-between gap-2 p-4 text-left transition-all duration-300 md:p-5 ${radius} ${
-          open ? "bg-white ring-1 ring-inset ring-gold/60" : "hover:-translate-y-0.5 hover:bg-white"
-        }`}
-      >
-        <span className="min-w-0">
-          <span className={`block text-[10px] uppercase tracking-[0.2em] ${open ? "text-ink/70" : "text-ink/50"}`}>{label}</span>
-          <span className="mt-1.5 block truncate text-sm font-medium text-ink">{value}</span>
-        </span>
-        <svg
-          className={`h-3 w-3 shrink-0 text-ink/40 transition-transform duration-300 ${open ? "rotate-180 text-gold" : ""}`}
-          viewBox="0 0 12 12"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        >
-          <path d="M2.5 4.5L6 8l3.5-3.5" />
-        </svg>
-      </button>
-      <AnimatePresence>{open && <Popover align={align}>{children}</Popover>}</AnimatePresence>
-    </div>
-  );
-}
-
-function SearchModule() {
-  const navigate = useNavigate();
-  const rootRef = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState<null | "location" | "type" | "budget" | "beds">(null);
-  const [location, setLocation] = useState("Los Angeles, CA");
-  const [query, setQuery] = useState("");
-  const [type, setType] = useState("Villa");
-  const [beds, setBeds] = useState("4+");
-  const [min, setMin] = useState(2_000_000);
-  const [max, setMax] = useState(5_000_000);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(null);
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(null); };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
-  }, []);
-
-  const toggle = (k: typeof open) => setOpen((o) => (o === k ? null : k));
-  const suggestions = LOCATIONS.filter((l) => l.toLowerCase().includes(query.trim().toLowerCase()));
-
-  const submit = () => {
-    setOpen(null);
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      navigate({
-        to: "/properties",
-        search: {
-          location,
-          type: type === "All properties" ? "Any" : type,
-          beds: beds === "Any" ? "Any" : beds.replace("+", ""),
-          min,
-          max,
-        },
-      });
-    }, 650);
-  };
-
-  return (
-    <motion.div
-      ref={rootRef}
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 1, ease, delay: 1.1 }}
-      className="relative rounded-2xl border border-primary-foreground/10 bg-canvas/95 p-2 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
-    >
-      <div className="grid grid-cols-1 gap-px rounded-xl bg-ink/5 md:grid-cols-5">
-        <Field label="Location" value={location} open={open === "location"} onToggle={() => toggle("location")} radius="rounded-t-xl md:rounded-tr-none md:rounded-l-xl">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">Search location</div>
-          <input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search city, neighborhood or area"
-            className="mt-2 w-full rounded-xl border border-ink/10 bg-white px-3 py-2.5 text-sm text-ink outline-none placeholder:text-ink/40 focus:border-gold"
-          />
-          <div className="mt-3 space-y-0.5">
-            {(suggestions.length ? suggestions : LOCATIONS).map((l) => (
-              <OptionRow key={l} label={l} active={l === location} onClick={() => { setLocation(l); setQuery(""); setOpen(null); }} />
-            ))}
-          </div>
-        </Field>
-
-        <Field label="Property type" value={type} open={open === "type"} onToggle={() => toggle("type")}>
-          <div className="space-y-0.5">
-            {TYPES.map((t) => (
-              <OptionRow key={t} label={t} active={t === type} onClick={() => { setType(t); setOpen(null); }} />
-            ))}
-          </div>
-        </Field>
-
-        <Field label="Budget" value={`${priceLabel(min)} – ${priceLabel(max)}`} open={open === "budget"} onToggle={() => toggle("budget")}>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">Minimum price</div>
-              <div className="mt-2 space-y-0.5">
-                {PRICES.map((p) => (
-                  <OptionRow key={p.value} label={p.label} active={p.value === min} onClick={() => { setMin(p.value); if (p.value > max) setMax(p.value); }} />
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">Maximum price</div>
-              <div className="mt-2 space-y-0.5">
-                {PRICES.map((p) => (
-                  <OptionRow key={p.value} label={p.label} active={p.value === max} onClick={() => { setMax(p.value); if (p.value < min) setMin(p.value); }} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </Field>
-
-        <Field label="Bedrooms" value={beds} open={open === "beds"} onToggle={() => toggle("beds")} align="right">
-          <div className="space-y-0.5">
-            {BEDS.map((b) => (
-              <OptionRow key={b} label={b} active={b === beds} onClick={() => { setBeds(b); setOpen(null); }} />
-            ))}
-          </div>
-        </Field>
-
-        <button
-          type="button"
-          onClick={submit}
-          disabled={loading}
-          className="group flex items-center justify-center gap-2 rounded-b-xl bg-ink px-4 py-4 text-sm font-medium text-primary-foreground transition-all duration-500 hover:bg-gold hover:text-ink active:scale-[0.98] md:rounded-b-none md:rounded-r-xl md:px-6"
-        >
-          {loading ? (
-            <>
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              <span>Searching</span>
-            </>
-          ) : (
-            <>
-              <span>Search</span>
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </>
-          )}
-        </button>
-      </div>
     </motion.div>
   );
 }
@@ -1095,6 +884,3 @@ function Index() {
     </main>
   );
 }
-
-// unused import guard
-void AnimatePresence;
