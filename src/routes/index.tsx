@@ -230,13 +230,13 @@ function Hero() {
           {/* Floating cards — desktop composition */}
           <motion.div
             style={{ x: sx, y: sy }}
-            className="relative hidden lg:col-span-4 lg:block lg:h-[520px] xl:h-[570px] lg:pr-2"
+            className="relative hidden lg:col-span-4 lg:block lg:h-[460px] xl:h-[500px] lg:pr-2"
           >
             <motion.div
               initial={{ opacity: 0, y: 30, rotate: -3 }}
               animate={{ opacity: 1, y: 0, rotate: -2 }}
               transition={{ duration: 1.1, ease, delay: 1.1 }}
-              className="absolute right-3 top-0 w-[230px] animate-hl-float xl:w-[262px]"
+              className="absolute right-3 top-0 w-[210px] animate-hl-float xl:w-[236px]"
             >
               <FloatingPropertyCard
                 image={property1}
@@ -249,7 +249,7 @@ function Hero() {
               initial={{ opacity: 0, y: 30, rotate: 4 }}
               animate={{ opacity: 1, y: 0, rotate: 3 }}
               transition={{ duration: 1.1, ease, delay: 1.3 }}
-              className="absolute -left-16 top-[276px] w-[188px] animate-hl-float-slow xl:-left-24 xl:top-[300px] xl:w-[204px]"
+              className="absolute -left-16 top-[236px] w-[176px] animate-hl-float-slow xl:-left-24 xl:top-[258px] xl:w-[190px]"
             >
               <FloatingPropertyCard
                 image={property3}
