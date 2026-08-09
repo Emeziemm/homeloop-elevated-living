@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, useSpring, useMotionValue, AnimatePresence } from "framer-motion";
 import { QuickViewModal } from "@/components/quick-view-modal";
@@ -396,6 +396,7 @@ function Field({
   onToggle,
   children,
   align,
+  radius = "",
 }: {
   label: string;
   value: string;
@@ -403,14 +404,15 @@ function Field({
   onToggle: () => void;
   children: React.ReactNode;
   align?: "left" | "right";
+  radius?: string;
 }) {
   return (
-    <div className="relative bg-canvas">
+    <div className={`relative bg-canvas ${radius}`}>
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className={`group flex w-full items-center justify-between gap-2 p-4 text-left transition-all duration-300 md:p-5 ${
+        className={`group flex w-full items-center justify-between gap-2 p-4 text-left transition-all duration-300 md:p-5 ${radius} ${
           open ? "bg-white ring-1 ring-inset ring-gold/60" : "hover:-translate-y-0.5 hover:bg-white"
         }`}
       >
@@ -486,7 +488,7 @@ function SearchModule() {
       className="relative rounded-2xl border border-primary-foreground/10 bg-canvas/95 p-2 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
     >
       <div className="grid grid-cols-1 gap-px rounded-xl bg-ink/5 md:grid-cols-5">
-        <Field label="Location" value={location} open={open === "location"} onToggle={() => toggle("location")}>
+        <Field label="Location" value={location} open={open === "location"} onToggle={() => toggle("location")} radius="rounded-t-xl md:rounded-tr-none md:rounded-l-xl">
           <div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">Search location</div>
           <input
             autoFocus
