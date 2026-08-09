@@ -227,13 +227,16 @@ function Hero() {
             </motion.div>
           </div>
 
-          {/* Floating card */}
-          <motion.div style={{ x: sx, y: sy }} className="relative hidden lg:col-span-4 lg:block">
+          {/* Floating cards — desktop composition */}
+          <motion.div
+            style={{ x: sx, y: sy }}
+            className="relative hidden lg:col-span-4 lg:block lg:h-[440px] xl:h-[480px] lg:pr-2"
+          >
             <motion.div
               initial={{ opacity: 0, y: 30, rotate: -3 }}
               animate={{ opacity: 1, y: 0, rotate: -2 }}
               transition={{ duration: 1.1, ease, delay: 1.1 }}
-              className="absolute right-0 top-6 w-[290px] animate-hl-float"
+              className="absolute right-3 top-0 w-[230px] animate-hl-float xl:w-[262px]"
             >
               <FloatingPropertyCard
                 image={property1}
@@ -246,7 +249,7 @@ function Hero() {
               initial={{ opacity: 0, y: 30, rotate: 4 }}
               animate={{ opacity: 1, y: 0, rotate: 3 }}
               transition={{ duration: 1.1, ease, delay: 1.3 }}
-              className="absolute right-20 top-72 w-[240px] animate-hl-float-slow"
+              className="absolute left-0 top-[228px] w-[188px] animate-hl-float-slow xl:top-[250px] xl:w-[208px]"
             >
               <FloatingPropertyCard
                 image={property3}
@@ -259,8 +262,28 @@ function Hero() {
           </motion.div>
         </div>
 
+        {/* Floating cards — tablet / mobile stacked arrangement */}
+        <div className="mt-10 flex gap-4 lg:hidden">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease, delay: 1.1 }}
+            className="w-[200px] shrink-0 sm:w-[230px]"
+          >
+            <FloatingPropertyCard image={property1} location="Beverly Hills" price="$3.8M" beds="4 Bed" compact />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease, delay: 1.25 }}
+            className="hidden w-[200px] shrink-0 sm:block sm:w-[230px]"
+          >
+            <FloatingPropertyCard image={property3} location="Downtown LA" price="$2.1M" beds="2 Bed" compact />
+          </motion.div>
+        </div>
+
         {/* Search module + stats */}
-        <div className="mt-16 space-y-8">
+        <div className="relative z-20 mt-16 space-y-8">
           <SearchModule />
           <div className="grid grid-cols-2 gap-8 border-t border-primary-foreground/10 pt-8 md:grid-cols-4">
             <Stat value="98%" label="Properties sold" delay={1.4} />
