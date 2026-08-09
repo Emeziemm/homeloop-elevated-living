@@ -249,7 +249,7 @@ function Hero() {
               initial={{ opacity: 0, y: 30, rotate: 4 }}
               animate={{ opacity: 1, y: 0, rotate: 3 }}
               transition={{ duration: 1.1, ease, delay: 1.3 }}
-              className="absolute -left-6 top-[300px] w-[188px] animate-hl-float-slow xl:top-[330px] xl:w-[208px]"
+              className="absolute -left-16 top-[276px] w-[188px] animate-hl-float-slow xl:-left-24 xl:top-[300px] xl:w-[204px]"
             >
               <FloatingPropertyCard
                 image={property3}
