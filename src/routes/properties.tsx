@@ -8,6 +8,13 @@ import { filterChips, formatPrice, properties, type Property } from "@/lib/prope
 import heroVilla from "@/assets/hero-villa.jpg";
 
 export const Route = createFileRoute("/properties")({
+  validateSearch: (raw: Record<string, unknown>) => ({
+    location: typeof raw.location === "string" ? raw.location : undefined,
+    type: typeof raw.type === "string" ? raw.type : undefined,
+    beds: typeof raw.beds === "string" ? raw.beds : undefined,
+    min: typeof raw.min === "number" ? raw.min : undefined,
+    max: typeof raw.max === "number" ? raw.max : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Property Listings — Homeloop" },
@@ -44,11 +51,19 @@ const initialSearch: SearchState = {
 };
 
 function PropertiesPage() {
+  const params = Route.useSearch();
   const [filters, setFilters] = useState<string[]>([]);
   const [quickView, setQuickView] = useState<Property | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState<SearchState>(initialSearch);
+  const [search, setSearch] = useState<SearchState>({
+    ...initialSearch,
+    location: params.location ?? initialSearch.location,
+    type: params.type && params.type !== "Any" ? params.type : initialSearch.type,
+    beds: params.beds ?? initialSearch.beds,
+    min: params.min ?? initialSearch.min,
+    max: params.max ?? initialSearch.max,
+  });
   const [searching, setSearching] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 

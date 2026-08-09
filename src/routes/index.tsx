@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, useSpring, useMotionValue, AnimatePresence } from "framer-motion";
 import { QuickViewModal } from "@/components/quick-view-modal";
@@ -227,13 +227,16 @@ function Hero() {
             </motion.div>
           </div>
 
-          {/* Floating card */}
-          <motion.div style={{ x: sx, y: sy }} className="relative hidden lg:col-span-4 lg:block">
+          {/* Floating cards — desktop composition */}
+          <motion.div
+            style={{ x: sx, y: sy }}
+            className="relative hidden lg:col-span-4 lg:block lg:h-[460px] xl:h-[500px] lg:pr-2"
+          >
             <motion.div
               initial={{ opacity: 0, y: 30, rotate: -3 }}
               animate={{ opacity: 1, y: 0, rotate: -2 }}
               transition={{ duration: 1.1, ease, delay: 1.1 }}
-              className="absolute right-0 top-6 w-[290px] animate-hl-float"
+              className="absolute right-3 top-0 w-[210px] animate-hl-float xl:w-[236px]"
             >
               <FloatingPropertyCard
                 image={property1}
@@ -246,7 +249,7 @@ function Hero() {
               initial={{ opacity: 0, y: 30, rotate: 4 }}
               animate={{ opacity: 1, y: 0, rotate: 3 }}
               transition={{ duration: 1.1, ease, delay: 1.3 }}
-              className="absolute right-20 top-72 w-[240px] animate-hl-float-slow"
+              className="absolute -left-16 top-[236px] w-[176px] animate-hl-float-slow xl:-left-24 xl:top-[258px] xl:w-[190px]"
             >
               <FloatingPropertyCard
                 image={property3}
@@ -259,8 +262,28 @@ function Hero() {
           </motion.div>
         </div>
 
+        {/* Floating cards — tablet / mobile stacked arrangement */}
+        <div className="mt-10 flex gap-4 lg:hidden">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease, delay: 1.1 }}
+            className="w-[200px] shrink-0 sm:w-[230px]"
+          >
+            <FloatingPropertyCard image={property1} location="Beverly Hills" price="$3.8M" beds="4 Bed" compact />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease, delay: 1.25 }}
+            className="hidden w-[200px] shrink-0 sm:block sm:w-[230px]"
+          >
+            <FloatingPropertyCard image={property3} location="Downtown LA" price="$2.1M" beds="2 Bed" compact />
+          </motion.div>
+        </div>
+
         {/* Search module + stats */}
-        <div className="mt-16 space-y-8">
+        <div className="relative z-20 mt-16 space-y-8">
           <SearchModule />
           <div className="grid grid-cols-2 gap-8 border-t border-primary-foreground/10 pt-8 md:grid-cols-4">
             <Stat value="98%" label="Properties sold" delay={1.4} />
@@ -322,31 +345,220 @@ function Stat({ value, label, delay }: { value: string; label: string; delay: nu
   );
 }
 
-function SearchModule() {
-  const fields = [
-    { label: "Location", value: "Los Angeles, CA" },
-    { label: "Property type", value: "Villa" },
-    { label: "Budget", value: "$2M – $5M" },
-    { label: "Bedrooms", value: "4+" },
-  ];
+const LOCATIONS = ["Los Angeles, CA", "New York, NY", "London, UK", "Paris, France", "Dubai, UAE", "Miami, FL"];
+const TYPES = ["All properties", "Apartment", "Villa", "Townhouse", "Penthouse", "Estate", "Commercial"];
+const BEDS = ["Any", "1+", "2+", "3+", "4+", "5+", "6+"];
+const PRICES: { label: string; value: number }[] = [
+  { label: "$500K", value: 500_000 },
+  { label: "$1M", value: 1_000_000 },
+  { label: "$2M", value: 2_000_000 },
+  { label: "$5M", value: 5_000_000 },
+  { label: "$10M+", value: 15_000_000 },
+];
+
+function priceLabel(v: number) {
+  return PRICES.find((p) => p.value === v)?.label ?? `$${(v / 1_000_000).toFixed(0)}M`;
+}
+
+function Popover({ children, align = "left" }: { children: React.ReactNode; align?: "left" | "right" }) {
   return (
     <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 8 }}
+      transition={{ duration: 0.22, ease: "easeOut" }}
+      className={`absolute bottom-[calc(100%+10px)] z-50 max-h-[52vh] w-[min(20rem,calc(100vw-3rem))] overflow-y-auto rounded-[18px] border border-ink/10 bg-canvas p-4 text-ink shadow-[0_30px_80px_-24px_rgba(0,0,0,0.45)] ${align === "right" ? "right-0" : "left-0"}`}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function OptionRow({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
+        active ? "bg-gold/15 font-medium text-ink" : "text-ink/70 hover:bg-ink/5 hover:text-ink"
+      }`}
+    >
+      {label}
+      {active && <span className="h-1.5 w-1.5 rounded-full bg-gold" />}
+    </button>
+  );
+}
+
+function Field({
+  label,
+  value,
+  open,
+  onToggle,
+  children,
+  align,
+  radius = "",
+}: {
+  label: string;
+  value: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  align?: "left" | "right";
+  radius?: string;
+}) {
+  return (
+    <div className={`relative bg-canvas ${radius}`}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={`group flex w-full items-center justify-between gap-2 p-4 text-left transition-all duration-300 md:p-5 ${radius} ${
+          open ? "bg-white ring-1 ring-inset ring-gold/60" : "hover:-translate-y-0.5 hover:bg-white"
+        }`}
+      >
+        <span className="min-w-0">
+          <span className={`block text-[10px] uppercase tracking-[0.2em] ${open ? "text-ink/70" : "text-ink/50"}`}>{label}</span>
+          <span className="mt-1.5 block truncate text-sm font-medium text-ink">{value}</span>
+        </span>
+        <svg
+          className={`h-3 w-3 shrink-0 text-ink/40 transition-transform duration-300 ${open ? "rotate-180 text-gold" : ""}`}
+          viewBox="0 0 12 12"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        >
+          <path d="M2.5 4.5L6 8l3.5-3.5" />
+        </svg>
+      </button>
+      <AnimatePresence>{open && <Popover align={align}>{children}</Popover>}</AnimatePresence>
+    </div>
+  );
+}
+
+function SearchModule() {
+  const navigate = useNavigate();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState<null | "location" | "type" | "budget" | "beds">(null);
+  const [location, setLocation] = useState("Los Angeles, CA");
+  const [query, setQuery] = useState("");
+  const [type, setType] = useState("Villa");
+  const [beds, setBeds] = useState("4+");
+  const [min, setMin] = useState(2_000_000);
+  const [max, setMax] = useState(5_000_000);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(null);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(null); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, []);
+
+  const toggle = (k: typeof open) => setOpen((o) => (o === k ? null : k));
+  const suggestions = LOCATIONS.filter((l) => l.toLowerCase().includes(query.trim().toLowerCase()));
+
+  const submit = () => {
+    setOpen(null);
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      navigate({
+        to: "/properties",
+        search: {
+          location,
+          type: type === "All properties" ? "Any" : type,
+          beds: beds === "Any" ? "Any" : beds.replace("+", ""),
+          min,
+          max,
+        },
+      });
+    }, 650);
+  };
+
+  return (
+    <motion.div
+      ref={rootRef}
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 1, ease, delay: 1.1 }}
       className="relative rounded-2xl border border-primary-foreground/10 bg-canvas/95 p-2 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
     >
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-ink/5 md:grid-cols-5">
-        {fields.map((f) => (
-          <div key={f.label} className="group cursor-pointer bg-canvas p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white md:p-5">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">{f.label}</div>
-            <div className="mt-1.5 text-sm font-medium text-ink">{f.value}</div>
+      <div className="grid grid-cols-1 gap-px rounded-xl bg-ink/5 md:grid-cols-5">
+        <Field label="Location" value={location} open={open === "location"} onToggle={() => toggle("location")} radius="rounded-t-xl md:rounded-tr-none md:rounded-l-xl">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">Search location</div>
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search city, neighborhood or area"
+            className="mt-2 w-full rounded-xl border border-ink/10 bg-white px-3 py-2.5 text-sm text-ink outline-none placeholder:text-ink/40 focus:border-gold"
+          />
+          <div className="mt-3 space-y-0.5">
+            {(suggestions.length ? suggestions : LOCATIONS).map((l) => (
+              <OptionRow key={l} label={l} active={l === location} onClick={() => { setLocation(l); setQuery(""); setOpen(null); }} />
+            ))}
           </div>
-        ))}
-        <Link to="/properties" className="group flex items-center justify-center gap-2 bg-ink px-4 py-4 text-sm font-medium text-primary-foreground transition-all duration-500 hover:bg-gold hover:text-ink md:px-6">
-          <span>Search</span>
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-        </Link>
+        </Field>
+
+        <Field label="Property type" value={type} open={open === "type"} onToggle={() => toggle("type")}>
+          <div className="space-y-0.5">
+            {TYPES.map((t) => (
+              <OptionRow key={t} label={t} active={t === type} onClick={() => { setType(t); setOpen(null); }} />
+            ))}
+          </div>
+        </Field>
+
+        <Field label="Budget" value={`${priceLabel(min)} – ${priceLabel(max)}`} open={open === "budget"} onToggle={() => toggle("budget")}>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">Minimum price</div>
+              <div className="mt-2 space-y-0.5">
+                {PRICES.map((p) => (
+                  <OptionRow key={p.value} label={p.label} active={p.value === min} onClick={() => { setMin(p.value); if (p.value > max) setMax(p.value); }} />
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">Maximum price</div>
+              <div className="mt-2 space-y-0.5">
+                {PRICES.map((p) => (
+                  <OptionRow key={p.value} label={p.label} active={p.value === max} onClick={() => { setMax(p.value); if (p.value < min) setMin(p.value); }} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </Field>
+
+        <Field label="Bedrooms" value={beds} open={open === "beds"} onToggle={() => toggle("beds")} align="right">
+          <div className="space-y-0.5">
+            {BEDS.map((b) => (
+              <OptionRow key={b} label={b} active={b === beds} onClick={() => { setBeds(b); setOpen(null); }} />
+            ))}
+          </div>
+        </Field>
+
+        <button
+          type="button"
+          onClick={submit}
+          disabled={loading}
+          className="group flex items-center justify-center gap-2 rounded-b-xl bg-ink px-4 py-4 text-sm font-medium text-primary-foreground transition-all duration-500 hover:bg-gold hover:text-ink active:scale-[0.98] md:rounded-b-none md:rounded-r-xl md:px-6"
+        >
+          {loading ? (
+            <>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              <span>Searching</span>
+            </>
+          ) : (
+            <>
+              <span>Search</span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </>
+          )}
+        </button>
       </div>
     </motion.div>
   );
