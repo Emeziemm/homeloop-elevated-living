@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { SiteNav } from "@/components/site-nav";
 import { PropertyCard } from "@/components/property-card";
 import { QuickViewModal } from "@/components/quick-view-modal";
+import { useBooking } from "@/components/booking-context";
 import { findProperty, formatPrice, properties, type Property } from "@/lib/properties";
 import ctaBg from "@/assets/cta-bg.jpg";
 
@@ -45,6 +46,7 @@ function PropertyDetail() {
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
   const [quickView, setQuickView] = useState<Property | null>(null);
+  const { openBooking } = useBooking();
 
   const similar = useMemo(
     () => properties.filter((x) => x.id !== p.id && x.category === p.category).slice(0, 3),
@@ -106,7 +108,7 @@ function PropertyDetail() {
           <div className="text-[10px] uppercase tracking-[0.24em] text-ink/50">Price</div>
           <div className="truncate font-display text-lg font-medium">{formatPrice(p.price)}</div>
         </div>
-        <button className="shrink-0 rounded-full bg-ink px-6 py-3 text-sm font-medium text-primary-foreground">Book viewing</button>
+        <button onClick={() => openBooking(p)} className="shrink-0 rounded-full bg-ink px-6 py-3 text-sm font-medium text-primary-foreground">Book viewing</button>
       </div>
     </div>
   );
@@ -177,7 +179,7 @@ function DetailHero({ p, onOpenGallery, saved, onSave, onShare, shared }: {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease, delay: 0.75 }} className="mt-10 flex flex-wrap items-center gap-3">
-            <button className="group inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3 text-[13px] font-medium text-ink transition-transform hover:scale-[1.03]">
+            <button onClick={() => openBooking(p)} className="group inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3 text-[13px] font-medium text-ink transition-transform hover:scale-[1.03]">
               Book a viewing
               <svg className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.5" fill="none"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
             </button>
@@ -206,7 +208,7 @@ function DetailHero({ p, onOpenGallery, saved, onSave, onShare, shared }: {
               <div className="border-x border-ink/10"><div className="font-medium">{p.baths}</div><div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">Baths</div></div>
               <div><div className="font-medium">{p.area}</div><div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">Sqm</div></div>
             </div>
-            <button className="mt-5 w-full rounded-full bg-ink py-3 text-sm font-medium text-primary-foreground transition-all hover:bg-gold hover:text-ink">Book viewing</button>
+            <button onClick={() => openBooking(p)} className="mt-5 w-full rounded-full bg-ink py-3 text-sm font-medium text-primary-foreground transition-all hover:bg-gold hover:text-ink">Book viewing</button>
           </motion.div>
         </div>
       </div>
@@ -492,7 +494,7 @@ function AgentSection({ p }: { p: Property }) {
             ))}
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            <button className="rounded-full bg-ink px-5 py-2.5 text-sm text-primary-foreground hover:bg-gold hover:text-ink transition-all">Book viewing</button>
+            <button onClick={() => openBooking(p)} className="rounded-full bg-ink px-5 py-2.5 text-sm text-primary-foreground hover:bg-gold hover:text-ink transition-all">Book viewing</button>
             <a href={`mailto:${a.email}`} className="rounded-full border border-ink/15 px-5 py-2.5 text-sm hover:bg-ink/5">{a.email}</a>
             <a href={`tel:${a.phone}`} className="rounded-full border border-ink/15 px-5 py-2.5 text-sm hover:bg-ink/5">{a.phone}</a>
           </div>
@@ -522,7 +524,7 @@ function StickyBooking({ p }: { p: Property }) {
             <div><div className="font-medium">{p.area}</div><div className="text-[10px] uppercase tracking-[0.2em] text-ink/50">Sqm</div></div>
           </div>
           <div className="mt-5 space-y-2">
-            <button className="w-full rounded-full bg-ink py-3 text-sm font-medium text-primary-foreground hover:bg-gold hover:text-ink transition-all">Book viewing</button>
+            <button onClick={() => openBooking(p)} className="w-full rounded-full bg-ink py-3 text-sm font-medium text-primary-foreground hover:bg-gold hover:text-ink transition-all">Book viewing</button>
             <button className="w-full rounded-full border border-ink/15 py-3 text-sm hover:bg-ink/5">Schedule tour</button>
             <button className="w-full rounded-full border border-ink/15 py-3 text-sm hover:bg-ink/5">Request information</button>
           </div>
@@ -613,7 +615,7 @@ function FinalCTA({ p }: { p: Property }) {
         </motion.p>
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.9, ease, delay: 0.25 }}
           className="relative mt-10 flex flex-wrap items-center justify-center gap-3">
-          <button className="rounded-full bg-gold px-6 py-3 text-sm font-medium text-ink hover:scale-105 transition-transform">Book viewing</button>
+          <button onClick={() => openBooking(p)} className="rounded-full bg-gold px-6 py-3 text-sm font-medium text-ink hover:scale-105 transition-transform">Book viewing</button>
           <a href={`mailto:${p.agent.email}`} className="rounded-full border border-primary-foreground/25 px-6 py-3 text-sm font-medium hover:bg-primary-foreground hover:text-ink transition-all">Contact agent</a>
         </motion.div>
       </div>

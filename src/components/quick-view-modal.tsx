@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
-import { formatPrice, type Property } from "@/lib/properties";
+import { useRef, useState } from "react";
+import { formatPrice, type Property } from "@lib/properties";
+import { useBooking } from "@/components/booking-context";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -20,6 +21,8 @@ export function QuickViewModal({ property, onClose }: Props) {
 
 function QuickView({ p, onClose }: { p: Property; onClose: () => void }) {
   const [i, setI] = useState(0);
+  const { openBooking } = useBooking();
+  const bookRef = useRef<HTMLButtonElement>(null);
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -121,7 +124,11 @@ function QuickView({ p, onClose }: { p: Property; onClose: () => void }) {
             ))}
           </div>
           <div className="mt-auto flex flex-wrap gap-3 pt-8">
-            <button className="rounded-full bg-ink px-6 py-3 text-sm font-medium text-primary-foreground transition-all hover:bg-gold hover:text-ink">
+            <button
+              ref={bookRef}
+              onClick={() => { onClose(); openBooking(p, bookRef.current); }}
+              className="rounded-full bg-ink px-6 py-3 text-sm font-medium text-primary-foreground transition-all hover:bg-gold hover:text-ink"
+            >
               Book viewing
             </button>
             <Link

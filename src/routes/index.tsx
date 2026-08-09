@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode, type MouseEvent } from "react";
 import { motion, useScroll, useTransform, useSpring, useMotionValue } from "framer-motion";
 import { QuickViewModal } from "@/components/quick-view-modal";
+import { useBooking } from "@/components/booking-context";
 import { properties, type Property } from "@/lib/properties";
 import heroVilla from "@/assets/hero-villa.jpg";
 import property1 from "@/assets/property-1.jpg";
@@ -76,6 +77,7 @@ function ArrowRight({ className = "h-3.5 w-3.5" }: { className?: string }) {
 
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
+  const { openBooking } = useBooking();
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     onScroll();
@@ -108,7 +110,9 @@ function Nav() {
         </nav>
         <div className="flex items-center gap-3">
           <button className="hidden text-[13px] font-medium text-ink/70 hover:text-ink md:inline">Sign in</button>
-          <button className={`rounded-full border transition-all duration-500 text-[13px] font-medium ${
+          <button
+            onClick={() => openBooking()}
+            className={`rounded-full border transition-all duration-500 text-[13px] font-medium ${
             scrolled
               ? "bg-ink text-primary-foreground border-ink px-4 py-2"
               : "border-ink/20 text-ink px-4 py-2 hover:bg-ink hover:text-primary-foreground hover:border-ink"
@@ -318,6 +322,7 @@ function FloatingPropertyCard({
   beds: string;
   compact?: boolean;
 }) {
+  const { openBooking } = useBooking();
   return (
     <div className="overflow-hidden rounded-2xl border border-primary-foreground/10 bg-canvas/95 p-2 shadow-2xl backdrop-blur-xl">
       <div className={`overflow-hidden rounded-xl ${compact ? "aspect-[4/3]" : "aspect-[4/5]"}`}>
@@ -333,7 +338,7 @@ function FloatingPropertyCard({
             <div className="font-display text-lg font-medium">{price}</div>
             <div className="text-[11px] text-ink/50">{beds}</div>
           </div>
-          <button className="rounded-full bg-ink px-3 py-1.5 text-[10px] font-medium text-primary-foreground">Book viewing</button>
+          <button onClick={() => openBooking()} className="rounded-full bg-ink px-3 py-1.5 text-[10px] font-medium text-primary-foreground">Book viewing</button>
         </div>
       </div>
     </div>
@@ -452,6 +457,7 @@ function PropertyCard({
   onQuickView?: (p: Property) => void;
 }) {
   const p = properties.find((x) => x.title === title);
+  const { openBooking } = useBooking();
   return (
     <motion.article
       initial={{ opacity: 0, y: 40 }}
@@ -493,7 +499,7 @@ function PropertyCard({
           </div>
           <div className="mt-6 max-h-0 overflow-hidden opacity-0 transition-all duration-700 group-hover:max-h-20 group-hover:opacity-100">
             <div className="flex items-center gap-3">
-              <button className="rounded-full bg-gold px-4 py-2 text-xs font-medium text-ink">Book viewing</button>
+              <button onClick={(e) => { e.stopPropagation(); openBooking(p ?? null); }} className="rounded-full bg-gold px-4 py-2 text-xs font-medium text-ink">Book viewing</button>
               <button className="rounded-full border border-white/30 px-4 py-2 text-xs font-medium text-white">Virtual tour</button>
             </div>
           </div>
@@ -772,6 +778,7 @@ function CTA() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
+  const { openBooking } = useBooking();
   return (
     <section ref={ref} className="relative overflow-hidden bg-ink text-primary-foreground">
       <motion.div style={{ y }} className="absolute inset-0">
@@ -794,7 +801,13 @@ function CTA() {
             No forms. No spam. A single reply from a real agent within ten minutes — including nights and weekends.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-6">
-            <GoldButton>Book your viewing</GoldButton>
+            <button onClick={() => openBooking()} className="group relative inline-flex items-center gap-3 overflow-hidden rounded-full bg-ink px-6 py-3 text-sm font-medium text-primary-foreground transition-all duration-500 hover:pl-7 hover:pr-8">
+              <span className="absolute inset-0 translate-y-full bg-gold transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-y-0" />
+              <span className="relative">Book your viewing</span>
+              <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-primary-foreground/10 transition-transform duration-500 group-hover:translate-x-1">
+                <ArrowRight />
+              </span>
+            </button>
             <a className="text-sm text-primary-foreground/70 underline-offset-4 hover:text-primary-foreground hover:underline" href="tel:+1">Or call · +1 (310) 555 0187</a>
           </div>
         </motion.div>

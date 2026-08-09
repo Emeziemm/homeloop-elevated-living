@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { SiteNav } from "@/components/site-nav";
 import { PropertyCard } from "@/components/property-card";
 import { QuickViewModal } from "@/components/quick-view-modal";
+import { useBooking } from "@/components/booking-context";
 import { properties, type Property } from "@/lib/properties";
 import heroVilla from "@/assets/hero-villa.jpg";
 import property1 from "@/assets/property-1.jpg";
@@ -67,6 +68,8 @@ function DetailsPage() {
   const [quickView, setQuickView] = useState<Property | null>(null);
   const { scrollYProgress } = useScroll();
   const progress = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
+  const { openBooking } = useBooking();
+  const villaSerenne = properties[0];
 
   return (
     <div className="min-h-screen bg-canvas text-ink">
@@ -101,7 +104,7 @@ function DetailsPage() {
           <div className="text-[10px] uppercase tracking-[0.24em] text-ink/50">Price</div>
           <div className="truncate font-display text-lg font-medium">£8.45M</div>
         </div>
-        <button className="shrink-0 rounded-full bg-ink px-6 py-3 text-sm font-medium text-primary-foreground">Book viewing</button>
+        <button onClick={() => openBooking(villaSerenne)} className="shrink-0 rounded-full bg-ink px-6 py-3 text-sm font-medium text-primary-foreground">Book viewing</button>
       </div>
     </div>
   );
@@ -113,6 +116,8 @@ function Hero({ onOpenGallery }: { onOpenGallery: (i: number) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "18%"]);
+  const { openBooking } = useBooking();
+  const villaSerenne = properties[0];
 
   const stats = ["5 Bedrooms", "6 Bathrooms", "620 sqm", "Contemporary Villa"];
 
@@ -164,7 +169,7 @@ function Hero({ onOpenGallery }: { onOpenGallery: (i: number) => void }) {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease, delay: 0.85 }} className="mt-10 flex flex-wrap items-center gap-3">
-            <button className="group inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3 text-[13px] font-medium text-ink transition-transform hover:scale-[1.03]">
+            <button onClick={() => openBooking(villaSerenne)} className="group inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3 text-[13px] font-medium text-ink transition-transform hover:scale-[1.03]">
               Book a Viewing
               <svg className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.5" fill="none"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
             </button>
@@ -446,6 +451,8 @@ function FloorPlanTour() {
 /* -------------------- Sticky contact -------------------- */
 
 function StickyContact() {
+  const { openBooking } = useBooking();
+  const villaSerenne = properties[0];
   return (
     <aside className="hidden lg:block">
       <div className="sticky top-24 space-y-4">
@@ -453,7 +460,7 @@ function StickyContact() {
           <div className="text-eyebrow">Schedule a Viewing</div>
           <p className="mt-3 text-sm leading-relaxed text-ink/65">Book a private tour of this property. Our agents host in-person and virtual visits, seven days a week.</p>
           <div className="mt-5 space-y-2">
-            <button className="w-full rounded-full bg-ink py-3 text-sm font-medium text-primary-foreground transition-all hover:bg-gold hover:text-ink">Book Viewing</button>
+            <button onClick={() => openBooking(villaSerenne)} className="w-full rounded-full bg-ink py-3 text-sm font-medium text-primary-foreground transition-all hover:bg-gold hover:text-ink">Book Viewing</button>
             <button className="w-full rounded-full border border-ink/15 py-3 text-sm transition-all hover:bg-ink/5">Request Information</button>
           </div>
           <div className="my-6 h-px bg-ink/10" />
@@ -531,6 +538,8 @@ function SimilarSection({ onQuickView }: { onQuickView: (p: Property) => void })
 /* -------------------- Final CTA -------------------- */
 
 function FinalCTA() {
+  const { openBooking } = useBooking();
+  const villaSerenne = properties[0];
   return (
     <section className="relative overflow-hidden bg-ink py-28 text-primary-foreground">
       <img src={ctaBg} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40" />
@@ -546,7 +555,7 @@ function FinalCTA() {
         </motion.p>
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.9, ease, delay: 0.25 }}
           className="relative mt-10 flex flex-wrap items-center justify-center gap-3">
-          <button className="rounded-full bg-gold px-6 py-3 text-sm font-medium text-ink transition-transform hover:scale-105">Book a Viewing</button>
+          <button onClick={() => openBooking(villaSerenne)} className="rounded-full bg-gold px-6 py-3 text-sm font-medium text-ink transition-transform hover:scale-105">Book a Viewing</button>
           <button className="rounded-full border border-primary-foreground/25 px-6 py-3 text-sm font-medium transition-all hover:bg-primary-foreground hover:text-ink">Contact Agent</button>
         </motion.div>
       </div>

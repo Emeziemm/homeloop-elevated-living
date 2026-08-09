@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useRef, useState } from "react";
 import { formatPrice, type Property } from "@/lib/properties";
+import { useBooking } from "@/components/booking-context";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -15,6 +16,8 @@ export function PropertyCard({ p, index = 0, onQuickView, className = "" }: Prop
   const [imgIdx, setImgIdx] = useState(0);
   const [saved, setSaved] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { openBooking } = useBooking();
+  const bookRef = useRef<HTMLSpanElement>(null);
 
   const onEnter = () => {
     timer.current = setInterval(() => setImgIdx((i) => (i + 1) % p.images.length), 1400);
@@ -110,7 +113,11 @@ export function PropertyCard({ p, index = 0, onQuickView, className = "" }: Prop
                   Quick view
                 </button>
               )}
-              <span className="rounded-full bg-gold px-3 py-1.5 text-[11px] font-medium text-ink transition-all group-hover:scale-105">
+              <span
+                ref={bookRef}
+                onClick={(e) => { stop(e); openBooking(p, bookRef.current); }}
+                className="cursor-pointer rounded-full bg-gold px-3 py-1.5 text-[11px] font-medium text-ink transition-all group-hover:scale-105"
+              >
                 Schedule viewing
               </span>
             </div>
