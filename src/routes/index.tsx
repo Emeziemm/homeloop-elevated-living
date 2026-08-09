@@ -363,11 +363,11 @@ function priceLabel(v: number) {
 function Popover({ children, align = "left" }: { children: React.ReactNode; align?: "left" | "right" }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: -8 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
+      exit={{ opacity: 0, y: 8 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
-      className={`absolute top-[calc(100%+10px)] z-50 w-[min(20rem,calc(100vw-3rem))] rounded-[18px] border border-ink/10 bg-canvas p-4 text-ink shadow-[0_30px_80px_-24px_rgba(0,0,0,0.45)] ${align === "right" ? "right-0" : "left-0"}`}
+      className={`absolute bottom-[calc(100%+10px)] z-50 max-h-[52vh] w-[min(20rem,calc(100vw-3rem))] overflow-y-auto rounded-[18px] border border-ink/10 bg-canvas p-4 text-ink shadow-[0_30px_80px_-24px_rgba(0,0,0,0.45)] ${align === "right" ? "right-0" : "left-0"}`}
     >
       {children}
     </motion.div>
