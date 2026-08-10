@@ -125,6 +125,7 @@ function DetailHero({ p, onOpenGallery, saved, onSave, onShare, shared }: {
   shared: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const { openBooking } = useBooking();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "18%"]);
 
@@ -470,6 +471,7 @@ function Lifestyle({ p }: { p: Property }) {
 
 function AgentSection({ p }: { p: Property }) {
   const a = p.agent;
+  const { openBooking } = useBooking();
   return (
     <section>
       <SectionHeader eyebrow="Your agent" title="Speak with someone who knows the street." />
@@ -511,6 +513,7 @@ function Stat({ k, v }: { k: string; v: string }) {
 
 function StickyBooking({ p }: { p: Property }) {
   const a = p.agent;
+  const { openBooking } = useBooking();
   const monthly = Math.round((p.price * 0.8 * (0.042 / 12)) / (1 - Math.pow(1 + 0.042 / 12, -300)));
   return (
     <aside className="hidden lg:block">
@@ -600,6 +603,7 @@ function SimilarSection({ items, onQuickView }: { items: Property[]; onQuickView
 }
 
 function FinalCTA({ p }: { p: Property }) {
+  const { openBooking } = useBooking();
   return (
     <section className="relative overflow-hidden bg-ink py-28 text-primary-foreground">
       <img src={ctaBg} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40" />
