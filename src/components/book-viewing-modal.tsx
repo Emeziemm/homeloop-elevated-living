@@ -141,7 +141,7 @@ export function BookViewingModal({ open, property, onClose, triggerRef }: Props)
                       <div className="font-display text-lg font-medium text-ink/80">Looking for your next home?</div>
                       <div className="relative mt-3">
                         <select
-                          value={selectedProperty?.id ?? ""}
+                          value=""
                           onChange={(e) => setSelectedProperty(properties.find((x) => x.id === e.target.value) ?? null)}
                           className="w-full appearance-none rounded-xl border border-ink/15 bg-white px-4 py-3 text-sm text-ink outline-none transition-colors focus:border-gold"
                           aria-label="Select a property"
