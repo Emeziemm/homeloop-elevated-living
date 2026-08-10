@@ -192,7 +192,7 @@ function Hero() {
       <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-[1400px] flex-col justify-between px-6 pb-10 pt-32 lg:px-10 lg:pt-40">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
           {/* Headline */}
-          <div className="lg:col-span-8">
+          <motion.div style={{ x: textX, y: textY }} className="lg:col-span-8">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease, delay: 0.1 }}>
               <Eyebrow className="text-primary-foreground/60">The Buyer Conversion System · Est. 2026</Eyebrow>
             </motion.div>
@@ -250,7 +250,7 @@ function Hero() {
                 Watch the film
               </button>
             </motion.div>
-          </div>
+          </motion.div>
 
           {/* Editorial property marker — desktop */}
           <motion.div
