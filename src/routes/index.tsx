@@ -305,10 +305,12 @@ function PropertyMarker({ compact = false }: { compact?: boolean }) {
     return (
       <div className="flex items-center gap-3 text-primary-foreground/70">
         <span className="text-[10px] tracking-[0.28em]">01</span>
-        <span className="h-px w-8 bg-primary-foreground/30" />
-        <span className="text-[10px] uppercase tracking-[0.24em] text-primary-foreground">Villa Serenne</span>
-        <span className="text-[10px] tracking-[0.18em] text-primary-foreground/60">Cap Ferrat, France</span>
-        <span className="font-display text-[11px] tracking-[0.12em] text-gold">€8.45M</span>
+        <span className="h-px w-6 shrink-0 bg-primary-foreground/30" />
+        <div className="leading-relaxed">
+          <span className="text-[10px] uppercase tracking-[0.24em] text-primary-foreground">Villa Serenne</span>
+          <span className="mx-2 text-[10px] uppercase tracking-[0.2em] text-primary-foreground/55">Cap Ferrat, France</span>
+          <span className="font-display text-[11px] tracking-[0.12em] text-gold">€8.45M</span>
+        </div>
       </div>
     );
   }
