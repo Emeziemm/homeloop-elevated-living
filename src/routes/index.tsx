@@ -135,6 +135,12 @@ function Hero() {
   const my = useMotionValue(0);
   const sx = useSpring(mx, { stiffness: 60, damping: 20 });
   const sy = useSpring(my, { stiffness: 60, damping: 20 });
+  const bgX = useTransform(sx, (v) => v * 0.35);
+  const bgY = useTransform(sy, (v) => v * 0.35);
+  const markerX = useTransform(sx, (v) => v * 1.1);
+  const markerY = useTransform(sy, (v) => v * 1.1);
+  const textX = useTransform(sx, (v) => v * -0.14);
+  const textY = useTransform(sy, (v) => v * -0.14);
 
   const onMove = (e: MouseEvent) => {
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
@@ -146,13 +152,21 @@ function Hero() {
     <section ref={ref} onMouseMove={onMove} className="relative min-h-[100svh] w-full overflow-hidden bg-ink text-primary-foreground">
       {/* Backdrop image */}
       <motion.div style={{ y, opacity }} className="absolute inset-0">
-        <img
-          src={heroVilla}
-          alt="Luxury cliffside villa at golden hour"
-          className="h-full w-full object-cover animate-hl-zoom"
-          width={1920}
-          height={1200}
-        />
+        <motion.div
+          style={{ x: bgX, y: bgY }}
+          className="absolute inset-[-3%]"
+        >
+          <motion.img
+            initial={{ clipPath: "inset(12% 0% 12% 0%)", opacity: 0 }}
+            animate={{ clipPath: "inset(0% 0% 0% 0%)", opacity: 1 }}
+            transition={{ duration: 1.6, ease }}
+            src={heroVilla}
+            alt="Luxury cliffside villa at golden hour"
+            className="h-full w-full object-cover animate-hl-hero-zoom"
+            width={1920}
+            height={1200}
+          />
+        </motion.div>
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/70" />
         <div className="absolute inset-0 bg-gradient-to-r from-ink/60 via-transparent to-transparent" />
       </motion.div>
