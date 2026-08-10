@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState } from "react";
-import { formatPrice, type Property } from "@lib/properties";
+import { formatPrice, type Property } from "@/lib/properties";
 import { useBooking } from "@/components/booking-context";
 
 const ease = [0.22, 1, 0.36, 1] as const;
