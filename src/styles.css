@@ -115,6 +115,14 @@
   from { transform: scale(1.06); }
   to { transform: scale(1.18); }
 }
+@keyframes hl-hero-zoom {
+  from { transform: scale(1.05); }
+  to { transform: scale(1); }
+}
+@keyframes hl-scroll-arrow {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50% { transform: translateY(6px); opacity: 1; }
+}
 @keyframes hl-marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
