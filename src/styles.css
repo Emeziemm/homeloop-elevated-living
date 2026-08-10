@@ -115,6 +115,14 @@
   from { transform: scale(1.06); }
   to { transform: scale(1.18); }
 }
+@keyframes hl-hero-zoom {
+  from { transform: scale(1.05); }
+  to { transform: scale(1); }
+}
+@keyframes hl-scroll-arrow {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50% { transform: translateY(6px); opacity: 1; }
+}
 @keyframes hl-marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
@@ -128,6 +136,8 @@
 @utility animate-hl-float { animation: hl-float 7s ease-in-out infinite; }
 @utility animate-hl-float-slow { animation: hl-float-slow 11s ease-in-out infinite; }
 @utility animate-hl-zoom { animation: hl-zoom 30s ease-out forwards; }
+@utility animate-hl-hero-zoom { animation: hl-hero-zoom 26s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+@utility animate-hl-scroll-arrow { animation: hl-scroll-arrow 2.4s ease-in-out infinite; }
 @utility animate-hl-marquee { animation: hl-marquee 40s linear infinite; }
 @utility animate-hl-shimmer { animation: hl-shimmer 4s ease-in-out infinite; }
 

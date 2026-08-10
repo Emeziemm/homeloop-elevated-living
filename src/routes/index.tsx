@@ -5,8 +5,6 @@ import { QuickViewModal } from "@/components/quick-view-modal";
 import { useBooking } from "@/components/booking-context";
 import { properties, type Property } from "@/lib/properties";
 import heroVilla from "@/assets/hero-villa.jpg";
-import property1 from "@/assets/property-1.jpg";
-import property3 from "@/assets/property-3.jpg";
 import area1 from "@/assets/area-1.jpg";
 import area2 from "@/assets/area-2.jpg";
 import area3 from "@/assets/area-3.jpg";
@@ -137,6 +135,12 @@ function Hero() {
   const my = useMotionValue(0);
   const sx = useSpring(mx, { stiffness: 60, damping: 20 });
   const sy = useSpring(my, { stiffness: 60, damping: 20 });
+  const bgX = useTransform(sx, (v) => v * 0.35);
+  const bgY = useTransform(sy, (v) => v * 0.35);
+  const markerX = useTransform(sx, (v) => v * 1.1);
+  const markerY = useTransform(sy, (v) => v * 1.1);
+  const textX = useTransform(sx, (v) => v * -0.14);
+  const textY = useTransform(sy, (v) => v * -0.14);
 
   const onMove = (e: MouseEvent) => {
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
@@ -148,13 +152,21 @@ function Hero() {
     <section ref={ref} onMouseMove={onMove} className="relative min-h-[100svh] w-full overflow-hidden bg-ink text-primary-foreground">
       {/* Backdrop image */}
       <motion.div style={{ y, opacity }} className="absolute inset-0">
-        <img
-          src={heroVilla}
-          alt="Luxury cliffside villa at golden hour"
-          className="h-full w-full object-cover animate-hl-zoom"
-          width={1920}
-          height={1200}
-        />
+        <motion.div
+          style={{ x: bgX, y: bgY }}
+          className="absolute inset-[-3%]"
+        >
+          <motion.img
+            initial={{ clipPath: "inset(12% 0% 12% 0%)", opacity: 0 }}
+            animate={{ clipPath: "inset(0% 0% 0% 0%)", opacity: 1 }}
+            transition={{ duration: 1.6, ease }}
+            src={heroVilla}
+            alt="Luxury cliffside villa at golden hour"
+            className="h-full w-full object-cover animate-hl-hero-zoom"
+            width={1920}
+            height={1200}
+          />
+        </motion.div>
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/70" />
         <div className="absolute inset-0 bg-gradient-to-r from-ink/60 via-transparent to-transparent" />
       </motion.div>
@@ -180,7 +192,7 @@ function Hero() {
       <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-[1400px] flex-col justify-between px-6 pb-10 pt-32 lg:px-10 lg:pt-40">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
           {/* Headline */}
-          <div className="lg:col-span-8">
+          <motion.div style={{ x: textX, y: textY }} className="lg:col-span-8">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease, delay: 0.1 }}>
               <Eyebrow className="text-primary-foreground/60">The Buyer Conversion System · Est. 2026</Eyebrow>
             </motion.div>
@@ -238,69 +250,48 @@ function Hero() {
                 Watch the film
               </button>
             </motion.div>
-          </div>
+          </motion.div>
 
-          {/* Floating cards — desktop composition */}
+          {/* Editorial property marker — desktop */}
           <motion.div
-            style={{ x: sx, y: sy }}
-            className="relative hidden lg:col-span-4 lg:block lg:h-[460px] xl:h-[500px] lg:pr-2"
+            style={{ x: markerX, y: markerY }}
+            className="pointer-events-none relative hidden lg:col-span-4 lg:block"
           >
             <motion.div
-              initial={{ opacity: 0, y: 30, rotate: -3 }}
-              animate={{ opacity: 1, y: 0, rotate: -2 }}
-              transition={{ duration: 1.1, ease, delay: 1.1 }}
-              className="absolute right-3 top-0 w-[210px] animate-hl-float xl:w-[236px]"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.2, ease, delay: 1.5 }}
+              className="absolute right-0 top-16 xl:top-24"
             >
-              <FloatingPropertyCard
-                image={property1}
-                location="Beverly Hills"
-                price="$3.8M"
-                beds="4 Bed"
-              />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 30, rotate: 4 }}
-              animate={{ opacity: 1, y: 0, rotate: 3 }}
-              transition={{ duration: 1.1, ease, delay: 1.3 }}
-              className="absolute -left-16 top-[236px] w-[176px] animate-hl-float-slow xl:-left-24 xl:top-[258px] xl:w-[190px]"
-            >
-              <FloatingPropertyCard
-                image={property3}
-                location="Downtown LA"
-                price="$2.1M"
-                beds="2 Bed"
-                compact
-              />
+              <PropertyMarker />
             </motion.div>
           </motion.div>
         </div>
 
-        {/* Floating cards — tablet / mobile stacked arrangement */}
-        <div className="mt-10 flex gap-4 lg:hidden">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease, delay: 1.1 }}
-            className="w-[200px] shrink-0 sm:w-[230px]"
-          >
-            <FloatingPropertyCard image={property1} location="Beverly Hills" price="$3.8M" beds="4 Bed" compact />
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease, delay: 1.25 }}
-            className="hidden w-[200px] shrink-0 sm:block sm:w-[230px]"
-          >
-            <FloatingPropertyCard image={property3} location="Downtown LA" price="$2.1M" beds="2 Bed" compact />
-          </motion.div>
-        </div>
+        {/* Editorial property marker — tablet / mobile */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, ease, delay: 1.4 }}
+          className="mt-10 lg:hidden"
+        >
+          <PropertyMarker compact />
+        </motion.div>
 
         {/* Stats */}
         <div className="relative z-20 mt-16">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, ease, delay: 1.6 }}
+            className="mb-6 hidden justify-end lg:flex"
+          >
+            <ScrollIndicator />
+          </motion.div>
           <div className="grid grid-cols-2 gap-8 border-t border-primary-foreground/10 pt-8 md:grid-cols-4">
             <Stat value="98%" label="Properties sold" delay={1.4} />
             <Stat value="<10 min" label="Avg response" delay={1.5} />
-            <Stat value="5,200+" label="Satisfied buyers" delay={1.6} />
+            <Stat value="5,200+" label="Qualified buyers" delay={1.6} />
             <Stat value="A+" label="Client rating" delay={1.7} />
           </div>
         </div>
@@ -309,38 +300,43 @@ function Hero() {
   );
 }
 
-function FloatingPropertyCard({
-  image,
-  location,
-  price,
-  beds,
-  compact = false,
-}: {
-  image: string;
-  location: string;
-  price: string;
-  beds: string;
-  compact?: boolean;
-}) {
-  const { openBooking } = useBooking();
+function PropertyMarker({ compact = false }: { compact?: boolean }) {
+  if (compact) {
+    return (
+      <div className="flex items-center gap-3 text-primary-foreground/70">
+        <span className="text-[10px] tracking-[0.28em]">01</span>
+        <span className="h-px w-6 shrink-0 bg-primary-foreground/30" />
+        <div className="leading-relaxed">
+          <span className="text-[10px] uppercase tracking-[0.24em] text-primary-foreground">Villa Serenne</span>
+          <span className="mx-2 text-[10px] uppercase tracking-[0.2em] text-primary-foreground/55">Cap Ferrat, France</span>
+          <span className="font-display text-[11px] tracking-[0.12em] text-gold">€8.45M</span>
+        </div>
+      </div>
+    );
+  }
   return (
-    <div className="overflow-hidden rounded-2xl border border-primary-foreground/10 bg-canvas/95 p-2 shadow-2xl backdrop-blur-xl">
-      <div className={`overflow-hidden rounded-xl ${compact ? "aspect-[4/3]" : "aspect-[4/5]"}`}>
-        <img src={image} alt={location} className="h-full w-full object-cover" loading="lazy" width={400} height={compact ? 300 : 500} />
+    <div className="flex items-start gap-4">
+      <div className="pt-1">
+        <span className="block h-px w-14 bg-primary-foreground/35" />
       </div>
-      <div className="p-3 text-ink">
-        <div className="flex items-center gap-1.5 text-[11px] text-ink/60">
-          <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="6" cy="5" r="2" /><path d="M6 1c2.2 0 4 1.8 4 4 0 3-4 6-4 6S2 8 2 5c0-2.2 1.8-4 4-4z" /></svg>
-          {location}
-        </div>
-        <div className="mt-2 flex items-end justify-between">
-          <div>
-            <div className="font-display text-lg font-medium">{price}</div>
-            <div className="text-[11px] text-ink/50">{beds}</div>
-          </div>
-          <button onClick={() => openBooking()} className="rounded-full bg-ink px-3 py-1.5 text-[10px] font-medium text-primary-foreground">Book viewing</button>
-        </div>
+      <div className="text-right">
+        <div className="text-[10px] tracking-[0.3em] text-primary-foreground/50">01</div>
+        <div className="mt-3 text-[11px] uppercase tracking-[0.28em] text-primary-foreground">Villa Serenne</div>
+        <div className="mt-1.5 text-[10px] uppercase tracking-[0.22em] text-primary-foreground/55">Cap Ferrat, France</div>
+        <div className="mt-3 font-display text-[13px] tracking-[0.1em] text-gold">€8.45M</div>
+        <span className="mt-4 ml-auto block h-14 w-px bg-gradient-to-b from-primary-foreground/35 to-transparent" />
       </div>
+    </div>
+  );
+}
+
+function ScrollIndicator() {
+  return (
+    <div className="flex items-center gap-3 text-primary-foreground/50">
+      <span className="text-[10px] uppercase tracking-[0.3em]">Scroll to explore</span>
+      <svg className="h-3.5 w-3.5 animate-hl-scroll-arrow" viewBox="0 0 12 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 1v13M2 10l4 4 4-4" />
+      </svg>
     </div>
   );
 }
