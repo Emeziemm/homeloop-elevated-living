@@ -5,8 +5,6 @@ import { QuickViewModal } from "@/components/quick-view-modal";
 import { useBooking } from "@/components/booking-context";
 import { properties, type Property } from "@/lib/properties";
 import heroVilla from "@/assets/hero-villa.jpg";
-import property1 from "@/assets/property-1.jpg";
-import property3 from "@/assets/property-3.jpg";
 import area1 from "@/assets/area-1.jpg";
 import area2 from "@/assets/area-2.jpg";
 import area3 from "@/assets/area-3.jpg";
