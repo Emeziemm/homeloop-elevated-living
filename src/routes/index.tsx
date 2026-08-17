@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode, type MouseEvent } from "react";
-import { motion, useScroll, useTransform, useSpring, useMotionValue } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform, useSpring, useMotionValue } from "framer-motion";
 import { QuickViewModal } from "@/components/quick-view-modal";
 import { useBooking } from "@/components/booking-context";
 import { properties, type Property } from "@/lib/properties";
@@ -12,6 +12,9 @@ import agent1 from "@/assets/agent-1.jpg";
 import agent2 from "@/assets/agent-2.jpg";
 import agent3 from "@/assets/agent-3.jpg";
 import ctaBg from "@/assets/cta-bg.jpg";
+import property1 from "@/assets/property-1.jpg";
+import property2 from "@/assets/property-2.jpg";
+import property3 from "@/assets/property-3.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
