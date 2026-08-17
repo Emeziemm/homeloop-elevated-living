@@ -238,7 +238,7 @@ function Hero() {
             >
               <Link
                 to="/properties"
-                search={{}}
+                search={{ location: undefined, type: undefined, beds: undefined, min: undefined, max: undefined }}
                 className="group relative inline-flex items-center gap-3 overflow-hidden rounded-full bg-ink px-6 py-3 text-sm font-medium text-primary-foreground transition-all duration-500 hover:pl-7 hover:pr-8"
               >
                 <span className="absolute inset-0 translate-y-full bg-gold transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-y-0" />

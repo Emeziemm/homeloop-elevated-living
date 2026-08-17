@@ -134,7 +134,7 @@ function QuickView({ p, onClose }: { p: Property; onClose: () => void }) {
             <Link
               to="/properties/$id"
               params={{ id: p.id }}
-              search={{}}
+              search={{ location: undefined, type: undefined, beds: undefined, min: undefined, max: undefined }}
               onClick={onClose}
               className="rounded-full border border-ink/20 px-6 py-3 text-sm font-medium text-ink hover:bg-ink hover:text-primary-foreground"
             >
