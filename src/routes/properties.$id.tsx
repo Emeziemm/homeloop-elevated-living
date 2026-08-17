@@ -32,7 +32,7 @@ export const Route = createFileRoute("/properties/$id")({
     <div className="grid min-h-screen place-items-center bg-canvas px-6 text-center">
       <div>
         <h1 className="font-display text-4xl">Property not found</h1>
-        <Link to="/properties" className="mt-6 inline-block rounded-full bg-ink px-6 py-3 text-sm text-primary-foreground">Back to collection</Link>
+        <Link to="/properties" search={{}} className="mt-6 inline-block rounded-full bg-ink px-6 py-3 text-sm text-primary-foreground">Back to collection</Link>
       </div>
     </div>
   ),
@@ -149,7 +149,7 @@ function DetailHero({ p, onOpenGallery, saved, onSave, onShare, shared }: {
           className="lg:col-span-12 flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-primary-foreground/60">
           <Link to="/" className="hover:text-primary-foreground">Home</Link>
           <span>/</span>
-          <Link to="/properties" className="hover:text-primary-foreground">Properties</Link>
+          <Link to="/properties" search={{}} className="hover:text-primary-foreground">Properties</Link>
           <span>/</span>
           <span className="text-primary-foreground/90 truncate">{p.title}</span>
         </motion.nav>
