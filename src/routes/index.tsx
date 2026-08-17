@@ -561,49 +561,177 @@ function WhyUs() {
 /* -------------------- Testimonials -------------------- */
 
 function Testimonials() {
-  const quotes = [
-    { q: "Homeloop rewired how buyers interact with our listings. Enquiries tripled in eight weeks.", who: "Amelia Hart", role: "Director, Hart & Co.", img: agent1 },
-    { q: "The template feels handcrafted for our brand. It hasn't looked like a template a single day.", who: "Marcus Beaumont", role: "Principal Broker, Beaumont", img: agent2 },
-    { q: "Response times went from hours to minutes. That's the entire game in luxury real estate.", who: "Sofia Villareal", role: "Head of Sales, Casa Nova", img: agent3 },
-    { q: "Our buyers now book viewings from the phone at 11pm. That never used to happen.", who: "Julian Reyes", role: "Founder, Reyes Estates", img: agent2 },
+  const stories = [
+    {
+      label: "Client Story · Cap Ferrat",
+      quote:
+        "Homeloop made the entire process feel effortless. From the first conversation to the final viewing, every detail was handled with care.",
+      name: "Amelia Hart",
+      role: "Director, Hart & Co.",
+      location: "Cap Ferrat",
+      purchased: "Purchased: Villa Serenne · Cap Ferrat",
+      portrait: agent1,
+      property: { name: "Villa Serenne", place: "Cap Ferrat, France", price: "€8.45M", img: property1 },
+    },
+    {
+      label: "Client Story · London",
+      quote:
+        "The template feels handcrafted for our brand. It never looked like a template.",
+      name: "Marcus Beaumont",
+      role: "Principal Broker, Beaumont",
+      location: "London",
+      purchased: "Purchased: The Chilton Residence · Mayfair",
+      portrait: agent2,
+      property: { name: "The Chilton Residence", place: "Mayfair, London", price: "£6.20M", img: property2 },
+    },
+    {
+      label: "Client Story · Barcelona",
+      quote:
+        "Response times improved dramatically. The entire experience finally feels as premium as the properties we represent.",
+      name: "Sofia Villareal",
+      role: "Head of Sales, Casa Nova",
+      location: "Barcelona",
+      purchased: "Purchased: Casa Lumière · Eixample",
+      portrait: agent3,
+      property: { name: "Casa Lumière", place: "Eixample, Barcelona", price: "€3.90M", img: property3 },
+    },
   ];
+
+  const [index, setIndex] = useState(0);
+  const active = stories[index]!;
+  const go = (dir: number) => setIndex((i) => (i + dir + stories.length) % stories.length);
+  const reveal = (delay: number) => ({
+    initial: { opacity: 0, y: 18 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, margin: "-80px" },
+    transition: { duration: 0.7, ease, delay },
+  });
+
   return (
     <section className="bg-canvas py-28 lg:py-40">
       <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
-        <div className="flex items-end justify-between">
-          <div>
-            <Eyebrow>What agencies are saying</Eyebrow>
-            <h2 className="mt-6 max-w-3xl text-[clamp(2rem,4.5vw,3.75rem)] leading-[1.02] tracking-tight">
-              Signed by studios who <span className="font-serif-display text-gold">sell for a living.</span>
-            </h2>
+        <motion.div {...reveal(0)}>
+          <Eyebrow>What our clients say</Eyebrow>
+        </motion.div>
+        <motion.h2 {...reveal(0.08)} className="mt-6 max-w-3xl text-[clamp(1.9rem,4vw,3.25rem)] leading-[1.05] tracking-tight">
+          Good homes deserve a<br className="hidden sm:block" />{" "}
+          <span className="font-serif-display text-gold">great experience.</span>
+        </motion.h2>
+
+        {/* Featured story */}
+        <div className="mt-16 grid grid-cols-1 items-start gap-10 lg:mt-24 lg:grid-cols-12 lg:gap-16">
+          <motion.div {...reveal(0.12)} className="lg:col-span-5">
+            <div className="group relative aspect-[4/5] overflow-hidden rounded-2xl bg-ink/5">
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={active.portrait}
+                  src={active.portrait}
+                  alt={active.name}
+                  loading="lazy"
+                  initial={{ opacity: 0, scale: 1.03, y: 12 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.6, ease }}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1200ms] group-hover:scale-[1.04]"
+                />
+              </AnimatePresence>
+            </div>
+          </motion.div>
+
+          <div className="lg:col-span-7 lg:pt-6">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active.name}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.55, ease }}
+              >
+                <div className="text-eyebrow">{active.label}</div>
+                <p className="mt-8 max-w-2xl font-display text-[clamp(1.4rem,2.6vw,2.1rem)] font-medium leading-[1.28] tracking-tight text-ink">
+                  “{active.quote}”
+                </p>
+                <div className="mt-10">
+                  <div className="text-base font-medium tracking-tight">{active.name}</div>
+                  <div className="mt-1 text-sm text-ink/55">{active.role}</div>
+                  <div className="mt-3 text-[11px] tracking-wide text-ink/40">{active.purchased}</div>
+                </div>
+
+                {/* Property connection */}
+                <div className="mt-10 flex max-w-sm items-center gap-4 border-t border-ink/10 pt-6">
+                  <img
+                    src={active.property.img}
+                    alt={active.property.name}
+                    loading="lazy"
+                    className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                  />
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-[0.24em] text-ink/40">Property</div>
+                    <div className="mt-1 truncate text-sm font-medium tracking-tight">{active.property.name}</div>
+                    <div className="mt-0.5 text-[11px] uppercase tracking-[0.14em] text-ink/45">
+                      {active.property.place}
+                    </div>
+                  </div>
+                  <div className="ml-auto whitespace-nowrap text-sm font-medium text-gold">{active.property.price}</div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Navigation */}
+            <div className="mt-12 flex items-center gap-8">
+              <span className="text-xs tabular-nums tracking-[0.18em] text-ink/45">
+                {String(index + 1).padStart(2, "0")} / {String(stories.length).padStart(2, "0")}
+              </span>
+              <div className="relative h-px w-28 bg-ink/15">
+                <motion.span
+                  className="absolute inset-y-0 left-0 bg-gold"
+                  animate={{ width: `${((index + 1) / stories.length) * 100}%` }}
+                  transition={{ duration: 0.6, ease }}
+                />
+              </div>
+              <div className="ml-auto flex items-center gap-6 text-[13px]">
+                <button onClick={() => go(-1)} className="text-ink/50 transition-colors hover:text-ink">
+                  ← Previous
+                </button>
+                <button onClick={() => go(1)} className="text-ink transition-opacity hover:opacity-60">
+                  Next →
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="mt-16 overflow-x-auto pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex snap-x snap-mandatory gap-6 px-6 lg:px-10">
-          {quotes.map((t, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, ease, delay: i * 0.05 }}
-              className="w-[86vw] shrink-0 snap-start rounded-2xl border border-ink/10 bg-white p-8 md:w-[520px] lg:p-12"
-            >
-              <svg viewBox="0 0 32 32" className="h-8 w-8 text-gold" fill="currentColor"><path d="M4 20c0-6 4-10 10-10v4c-4 0-6 3-6 6h4v8H4v-8zm14 0c0-6 4-10 10-10v4c-4 0-6 3-6 6h4v8H18v-8z" /></svg>
-              <p className="mt-8 font-display text-2xl font-medium leading-snug tracking-tight text-ink lg:text-[26px]">
-                "{t.q}"
-              </p>
-              <div className="mt-10 flex items-center gap-4">
-                <img src={t.img} alt={t.who} className="h-11 w-11 rounded-full object-cover grayscale" loading="lazy" />
-                <div>
-                  <div className="text-sm font-medium">{t.who}</div>
-                  <div className="text-xs text-ink/50">{t.role}</div>
+        {/* Supporting stories as selectors */}
+        <div className="mt-20 lg:mt-28">
+          {stories.map((s, i) =>
+            i === index ? null : (
+              <motion.button
+                key={s.name}
+                {...reveal(0.06 * i)}
+                onClick={() => setIndex(i)}
+                className="group flex w-full items-center gap-5 border-t border-ink/10 py-6 text-left transition-all duration-500 hover:bg-ink/[0.025] hover:pl-3 md:gap-8"
+              >
+                <img
+                  src={s.portrait}
+                  alt={s.name}
+                  loading="lazy"
+                  className="h-12 w-12 shrink-0 rounded-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="w-full min-w-0 md:flex md:items-center md:gap-8">
+                  <div className="md:w-56 md:shrink-0">
+                    <div className="text-sm font-medium tracking-tight">{s.name}</div>
+                    <div className="mt-0.5 text-xs text-ink/50">{s.role}</div>
+                    <div className="mt-0.5 text-[11px] uppercase tracking-[0.16em] text-ink/40">{s.location}</div>
+                  </div>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink/60 md:mt-0">“{s.quote}”</p>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+                <span className="ml-auto shrink-0 text-ink/40 transition-all duration-500 group-hover:translate-x-1.5 group-hover:text-ink">
+                  <ArrowRight className="h-4 w-4" />
+                </span>
+              </motion.button>
+            ),
+          )}
+          <div className="border-t border-ink/10" />
         </div>
       </div>
     </section>
