@@ -740,12 +740,44 @@ function Testimonials() {
 
 /* -------------------- Neighborhoods -------------------- */
 
+function ParallaxImage({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const y = useTransform(scrollYProgress, [0, 1], ["-4%", "4%"]);
+  return (
+    <div ref={ref} className={`absolute inset-0 overflow-hidden ${className}`}>
+      <motion.img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        style={{ y }}
+        className="absolute inset-x-0 -top-[6%] h-[112%] w-full object-cover transition-transform duration-[600ms] ease-out group-hover:scale-[1.04]"
+      />
+    </div>
+  );
+}
+
+function ExploreLink({ className = "" }: { className?: string }) {
+  return (
+    <span className={`inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] ${className}`}>
+      Explore area
+      <svg className="h-3 w-3 transition-transform duration-500 ease-out group-hover:translate-x-1.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+    </span>
+  );
+}
+
 function Neighborhoods() {
-  const areas = [
-    { name: "Bel Air Heights", price: "$4.2M avg", schools: "9/10", lifestyle: "Quiet · gated · leafy", count: 34, img: area1 },
-    { name: "Costa Serena", price: "$3.6M avg", schools: "8/10", lifestyle: "Beachfront · slow · warm", count: 21, img: area3 },
-    { name: "Old Town Ferrara", price: "$1.9M avg", schools: "8/10", lifestyle: "Historic · walkable · romantic", count: 12, img: area2 },
+  const featuredStats = [
+    { k: "Average home", v: "$3.2M" },
+    { k: "Lifestyle", v: "4.8 / 5" },
+    { k: "City access", v: "20 min" },
   ];
+  const secondary = [
+    { name: "Costa Serena", lifestyle: "Beachfront · slow · warm", meta: "From €1.8M · 12 min to airport", img: area3 },
+    { name: "Old Town Ferrara", lifestyle: "Historic · walkable · romantic", meta: "From €920K · Historic district", img: area2 },
+  ];
+
   return (
     <section id="neighborhoods" className="bg-white py-28 lg:py-40">
       <div className="mx-auto max-w-[1400px] px-6 lg:px-10">
@@ -757,40 +789,81 @@ function Neighborhoods() {
             </h2>
           </div>
           <p className="max-w-md self-end text-ink/60 md:justify-self-end md:text-right">
-            A home is only as good as the street it sits on. Every collection includes schools, lifestyle notes and average pricing.
+            Every home has a setting. Explore the places our buyers choose for the lifestyle as much as the address.
           </p>
         </div>
 
-        <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-3 lg:gap-8">
-          {areas.map((a) => (
-            <motion.div
-              key={a.name}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.9, ease }}
-              className="group relative aspect-[4/5] overflow-hidden rounded-2xl bg-ink"
-            >
-              <img src={a.img} alt={a.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-[1500ms] group-hover:scale-105" />
-              <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/20 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-6 text-primary-foreground lg:p-8">
-                <h3 className="font-display text-2xl font-medium tracking-tight lg:text-3xl">{a.name}</h3>
-                <p className="mt-1 text-sm text-white/60">{a.lifestyle}</p>
-                <div className="mt-6 max-h-0 overflow-hidden opacity-0 transition-all duration-700 group-hover:max-h-40 group-hover:opacity-100">
-                  <div className="grid grid-cols-3 gap-4 border-t border-white/20 pt-4 text-[11px]">
-                    <div><div className="text-white/50 uppercase tracking-widest">Avg price</div><div className="mt-1 text-white">{a.price}</div></div>
-                    <div><div className="text-white/50 uppercase tracking-widest">Schools</div><div className="mt-1 text-white">{a.schools}</div></div>
-                    <div><div className="text-white/50 uppercase tracking-widest">Homes</div><div className="mt-1 text-white">{a.count}</div></div>
+        <div className="mt-16 grid grid-cols-1 gap-6 lg:mt-20 lg:grid-cols-[1.6fr_1fr] lg:gap-8">
+          {/* Featured */}
+          <motion.a
+            href="#neighborhoods"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.9, ease }}
+            className="group relative block aspect-[4/5] overflow-hidden rounded-2xl bg-ink md:aspect-[16/11] lg:aspect-auto lg:min-h-[620px]"
+          >
+            <ParallaxImage src={area1} alt="Bel Air Heights" />
+            <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/25 to-transparent opacity-90 transition-opacity duration-500 ease-out group-hover:opacity-100" />
+            <div className="absolute inset-x-0 bottom-0 p-7 text-primary-foreground transition-transform duration-500 ease-out group-hover:-translate-y-1.5 lg:p-10">
+              <h3 className="font-display text-3xl font-medium tracking-tight lg:text-[2.6rem]">Bel Air Heights</h3>
+              <p className="mt-2 text-sm text-primary-foreground/60">Quiet · gated · leafy</p>
+
+              <div className="mt-7 grid grid-cols-3 gap-6 border-t border-primary-foreground/15 pt-5 opacity-70 transition-all duration-500 ease-out group-hover:opacity-100 lg:translate-y-2 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100">
+                {featuredStats.map((s) => (
+                  <div key={s.k}>
+                    <div className="text-[10px] uppercase tracking-[0.2em] text-primary-foreground/50">{s.k}</div>
+                    <div className="mt-1.5 font-display text-lg tracking-tight">{s.v}</div>
+                  </div>
+                ))}
+              </div>
+
+              <ExploreLink className="mt-7 text-gold opacity-80 transition-opacity duration-500 ease-out group-hover:opacity-100 lg:opacity-0 lg:group-hover:opacity-100" />
+            </div>
+          </motion.a>
+
+          {/* Secondary column */}
+          <div className="grid grid-cols-1 gap-6 lg:gap-8">
+            {secondary.map((a, i) => (
+              <motion.a
+                key={a.name}
+                href="#neighborhoods"
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.9, ease, delay: 0.08 * (i + 1) }}
+                className="group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-ink lg:aspect-auto lg:min-h-[294px]"
+              >
+                <ParallaxImage src={a.img} alt={a.name} />
+                <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/20 to-transparent opacity-90 transition-opacity duration-500 ease-out group-hover:opacity-100" />
+                <div className="absolute inset-x-0 bottom-0 p-6 text-primary-foreground transition-transform duration-500 ease-out group-hover:-translate-y-1.5 lg:p-7">
+                  <h3 className="font-display text-2xl font-medium tracking-tight">{a.name}</h3>
+                  <p className="mt-1.5 text-sm text-primary-foreground/60">{a.lifestyle}</p>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-primary-foreground/15 pt-4">
+                    <span className="text-[11px] tracking-wide text-primary-foreground/60">{a.meta}</span>
+                    <ExploreLink className="text-gold opacity-80 transition-opacity duration-500 ease-out group-hover:opacity-100 lg:opacity-0 lg:group-hover:opacity-100" />
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.a>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-10 flex justify-end">
+          <Link
+            to="/properties"
+            search={{ location: undefined, type: undefined, beds: undefined, min: undefined, max: undefined }}
+            className="group inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-ink/60 transition-colors hover:text-ink"
+          >
+            View all areas
+            <svg className="h-3 w-3 transition-transform duration-500 ease-out group-hover:translate-x-1.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+          </Link>
         </div>
       </div>
     </section>
   );
 }
+
 
 /* -------------------- Agents -------------------- */
 
