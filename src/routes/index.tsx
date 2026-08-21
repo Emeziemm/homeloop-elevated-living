@@ -86,6 +86,7 @@ function Nav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
   const links = ["Properties", "Neighborhoods", "Agents", "Process", "Journal"];
+  const light = !scrolled;
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
@@ -97,26 +98,28 @@ function Nav() {
     >
       <div className={`mx-auto flex max-w-[1400px] items-center justify-between px-6 lg:px-10 transition-all duration-500 ${scrolled ? "h-14" : "h-20"}`}>
         <a href="#" className="flex items-center gap-2">
-          <span className={`font-display font-semibold tracking-tight transition-all duration-500 ${scrolled ? "text-lg" : "text-xl"} text-ink`}>
+          <span className={`font-display font-semibold tracking-tight transition-all duration-500 ${scrolled ? "text-lg" : "text-xl"} ${light ? "text-primary-foreground" : "text-ink"}`}>
             Homeloop<span className="text-gold">.</span>
           </span>
         </a>
         <nav className="hidden items-center gap-9 md:flex">
           {links.map((l) => (
-            <a key={l} href={`#${l.toLowerCase()}`} className="group relative text-[13px] font-medium text-ink/70 transition-colors hover:text-ink">
+            <a key={l} href={`#${l.toLowerCase()}`} className={`group relative text-[13px] font-medium transition-colors duration-300 ${light ? "text-primary-foreground/70 hover:text-primary-foreground" : "text-ink/70 hover:text-ink"}`}>
               {l}
               <span className="absolute -bottom-1 left-0 h-px w-full origin-left scale-x-0 bg-gold transition-transform duration-500 group-hover:scale-x-100" />
             </a>
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <button className="hidden text-[13px] font-medium text-ink/70 hover:text-ink md:inline">Sign in</button>
+          <button className={`hidden text-[13px] font-medium transition-colors duration-300 md:inline ${light ? "text-primary-foreground/70 hover:text-primary-foreground" : "text-ink/70 hover:text-ink"}`}>Sign in</button>
           <button
             onClick={() => openBooking()}
-            className={`rounded-full border transition-all duration-500 text-[13px] font-medium ${
+            className={`rounded-full border transition-all duration-300 text-[13px] font-medium px-4 py-2 ${
             scrolled
-              ? "bg-ink text-primary-foreground border-ink px-4 py-2"
-              : "border-ink/20 text-ink px-4 py-2 hover:bg-ink hover:text-primary-foreground hover:border-ink"
+              ? "bg-ink text-primary-foreground border-ink"
+              : light
+                ? "border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground hover:text-ink"
+                : "border-ink/20 text-ink hover:bg-ink hover:text-primary-foreground hover:border-ink"
           }`}>
             Book a viewing
           </button>
